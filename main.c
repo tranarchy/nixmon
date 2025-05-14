@@ -1,6 +1,5 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
 #include <signal.h>
 #include <termios.h>
 
@@ -17,7 +16,6 @@ void INT_handler(int sig) {
     exit(0);
 }
 
-
 int main() {
     tcgetattr(0, &old);
     new = old;
@@ -26,7 +24,12 @@ int main() {
 
     signal(SIGINT, INT_handler);
 
+    struct timeval tv;
+    
     while (1) {
+        tv.tv_sec = 1;
+        tv.tv_usec = 0;
+
         printf(CLEAR);
 
         draw_box(1);
@@ -40,7 +43,7 @@ int main() {
     
         draw_box(0);
 
-        sleep(1);       
+        select(0, NULL, NULL, NULL, &tv);     
     }
 
     return 0;
