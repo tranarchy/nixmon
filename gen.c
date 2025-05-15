@@ -37,7 +37,7 @@ void get_uptime() {
     int uptime_hour = (uptime_sec / 60 / 60) - (uptime_day * 24);
     int uptime_min = (uptime_sec / 60) - (uptime_hour * 60) - (uptime_day * 24);
 
-    sprintf(uptime_buff, "%dd %dh %dm", uptime_day, uptime_hour, uptime_min);
+    snprintf(uptime_buff, 32, "%dd %dh %dm", uptime_day, uptime_hour, uptime_min);
     
     pretty_print("Uptime", uptime_buff);
 }

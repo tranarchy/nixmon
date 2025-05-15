@@ -1,41 +1,82 @@
 #include <stdio.h>
 #include <string.h>
 
+#if defined(__OpenBSD__)
+    #include <unistd.h>
+
+    #include <sys/sysctl.h>
+    #include <sys/vmmeter.h>
+#endif
+
 #include "util/util.h"
 
 long int mem_total, mem_max_used = 0;
 
 void get_mem_usage() {
-    FILE *fp;
-    char line[128];
-    long int available, used = 0;
+    long used = 0;
 
-    fp = fopen("/proc/meminfo", "r");
+    #if defined(__linux__)
 
-    if (fp == NULL) {
-        return;
-    }
+        FILE *fp;
+        char line[128];
 
-    while (fgets(line, sizeof(line), fp)) {
-        if (strstr(line, "MemTotal:") != NULL) {
-            if (sscanf(line, "MemTotal: %ld kB", &mem_total) == 1) {
-                continue;
+        long available = 0;
+
+        fp = fopen("/proc/meminfo", "r");
+
+        if (fp == NULL) {
+            return;
+        }
+
+        while (fgets(line, sizeof(line), fp)) {
+            if (strstr(line, "MemTotal:") != NULL) {
+                if (sscanf(line, "MemTotal: %ld kB", &mem_total) == 1) {
+                    continue;
+                }
+            }
+
+            if (strstr(line, "MemAvailable:") != NULL) {
+                if (sscanf(line, "MemAvailable: %ld kB", &available) == 1) {
+                    continue;
+                }
             }
         }
 
-        if (strstr(line, "MemAvailable:") != NULL) {
-            if (sscanf(line, "MemAvailable: %ld kB", &available) == 1) {
-                continue;
-            }
+        fclose(fp);
+
+        used = mem_total - available;
+
+        mem_total /= 1024;
+        used /= 1024;
+
+    #elif defined(__OpenBSD__)
+
+        int mib[2];
+        size_t len;
+
+        struct vmtotal vmtotal;
+
+        mib[0] = CTL_VM;
+        mib[1] = VM_METER;
+
+        len = sizeof(struct vmtotal);
+        int ret = sysctl(mib, 2, &vmtotal, &len, NULL, 0);
+
+        if (ret == -1) {
+            return;
         }
-    }
 
-    fclose(fp);
+        long long pagesize = sysconf(_SC_PAGESIZE);
 
-    used = mem_total - available;
+        long long active = vmtotal.t_avm * pagesize;
 
-    mem_total /= 1024;
-    used /= 1024;
+        long long wired = vmtotal.t_vm * pagesize;
+        long long free = vmtotal.t_free * pagesize;
+
+        used = get_mib(active);
+        mem_total = get_mib(wired + free);
+
+    #endif
 
     if (used > mem_max_used) {
         mem_max_used = used;

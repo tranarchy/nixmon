@@ -38,8 +38,11 @@ int main() {
         cpu_init();
         mem_init();
         storage_init();
-        amd_gpu_init();
-        i915_init();
+
+        #if defined(__linux__)
+            amd_gpu_init();
+            i915_init();
+        #endif
     
         draw_box(0);
 

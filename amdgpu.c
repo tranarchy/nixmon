@@ -84,7 +84,7 @@ void get_amd_gpu_power() {
         return;
     }
 
-    sprintf(power_path_buff, "%shwmon/%s/power1_average", CARD0_PATH_AMDGPU, amd_hwmon);
+    snprintf(power_path_buff, 512, "%shwmon/%s/power1_average", CARD0_PATH_AMDGPU, amd_hwmon);
 
     fp = fopen(power_path_buff, "r");
 
@@ -95,7 +95,7 @@ void get_amd_gpu_power() {
     fgets(power_buff, 32, fp);
     fclose(fp);
 
-    sprintf(amd_power_cap_path_buff, "%shwmon/%s/power1_cap_max", CARD0_PATH_AMDGPU, amd_hwmon);
+    snprintf(amd_power_cap_path_buff, 512, "%shwmon/%s/power1_cap_max", CARD0_PATH_AMDGPU, amd_hwmon);
 
     fp = fopen(amd_power_cap_path_buff, "r");
 
@@ -135,7 +135,7 @@ void get_amd_gpu_temp() {
         return;
     }
 
-    sprintf(temp_path_buff, "%shwmon/%s/temp1_input", CARD0_PATH_AMDGPU, amd_hwmon);
+    snprintf(temp_path_buff, 512, "%shwmon/%s/temp1_input", CARD0_PATH_AMDGPU, amd_hwmon);
 
     fp = fopen(temp_path_buff, "r");
 
@@ -152,14 +152,14 @@ void get_amd_gpu_temp() {
         amd_temp_max = temp;
     }
 
-    sprintf(temp_buff, "%dC", temp);
+    snprintf(temp_buff, 32, "%dC", temp);
 
     pretty_print("GPU temp", temp_buff);
 }
 
 void get_amd_gpu_amd_temp_max() {
     char temp_buff[32];
-    sprintf(temp_buff, "%dC", amd_temp_max);
+    snprintf(temp_buff, 32, "%dC", amd_temp_max);
     pretty_print("Max GPU temp", temp_buff);
 }
 
@@ -176,7 +176,7 @@ void get_amd_gpu_freq() {
         return;
     }
 
-    sprintf(freq_path_buff, "%shwmon/%s/freq1_input", CARD0_PATH_AMDGPU, amd_hwmon);
+    snprintf(freq_path_buff, 512, "%shwmon/%s/freq1_input", CARD0_PATH_AMDGPU, amd_hwmon);
 
     fp = fopen(freq_path_buff, "r");
 
@@ -193,14 +193,14 @@ void get_amd_gpu_freq() {
         amd_freq_max = freq;
     }
 
-    sprintf(freq_buff, "%ld MHz", freq);
+    snprintf(freq_buff, 32, "%ld MHz", freq);
 
     pretty_print("GPU freq", freq_buff);
 }
 
 void get_amd_gpu_amd_freq_max() {
     char amd_freq_max_buff[32];
-    sprintf(amd_freq_max_buff, "%ld MHz", amd_freq_max);
+    snprintf(amd_freq_max_buff, 32, "%ld MHz", amd_freq_max);
     pretty_print("Max GPU freq", amd_freq_max_buff);
 }
 
@@ -215,7 +215,7 @@ int amd_exists() {
         return 0;
     }
 
-    sprintf(name_path_buff, "%shwmon/%s/name", CARD0_PATH_AMDGPU, amd_hwmon);
+    snprintf(name_path_buff, 512, "%shwmon/%s/name", CARD0_PATH_AMDGPU, amd_hwmon);
 
     fp = fopen(name_path_buff, "r");
 

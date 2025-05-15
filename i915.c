@@ -15,7 +15,7 @@ void get_i915_gpu_freq() {
 
     int freq = 0;
 
-    sprintf(freq_path_buff, "%sgt_act_freq_mhz", CARD0_PATH_I915);
+    snprintf(freq_path_buff, 512, "%sgt_act_freq_mhz", CARD0_PATH_I915);
 
     fp = fopen(freq_path_buff, "r");
 
@@ -26,7 +26,7 @@ void get_i915_gpu_freq() {
     fgets(freq_buff, 32, fp);
     fclose(fp);
 
-    sprintf(freq_cap_path_buff, "%sgt_max_freq_mhz", CARD0_PATH_I915);
+    snprintf(freq_cap_path_buff, 512, "%sgt_max_freq_mhz", CARD0_PATH_I915);
 
     fp = fopen(freq_cap_path_buff, "r");
 

@@ -3,10 +3,17 @@
 
 #include "util/util.h"
 
+
+#if defined(__OpenBSD__)
+    #define MOUNTPOINT "/home"
+#elif
+    #define MOUNTPOINT "/"
+#endif
+
 void get_storage() {
     struct statvfs statvfs_buff;
 
-    if (statvfs("/", &statvfs_buff) == -1) {
+    if (statvfs(MOUNTPOINT, &statvfs_buff) == -1) {
         return;
     }
 
@@ -14,7 +21,7 @@ void get_storage() {
     int free = get_gib(statvfs_buff.f_bfree * statvfs_buff.f_frsize);
     int used = total - free;
 
-    print_progress("Storage (/)", used, total);
+    print_progress("Storage (" MOUNTPOINT ")", used, total);
 
     printf(" (%dGiB / %dGiB)\n", used, total);
 }

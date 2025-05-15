@@ -4,15 +4,71 @@
 
 #include <sys/ioctl.h>
 
+#if defined(__OpenBSD__)
+    #include <string.h>
+    #include <sys/time.h>
+    #include <sys/sysctl.h>
+    #include <sys/sensors.h>
+#endif
+
 #include "ansi.h"
 
-unsigned int get_gib(double value) {
-    return value / 1024 / 1024 / 1024;
+int get_gib(long long value) {
+    return value / (1024 * 1024 * 1024);
 }
 
-unsigned int get_mib(double value) {
-    return value / 1024 / 1024;
+int get_mib(long long value) {
+    return value / (1024 * 1024);
 }
+
+#if defined(__OpenBSD__)
+int microkelvin_to_celsius(long int value) {
+    return (value - 273150000) / 1E6;
+}
+
+struct sensor get_sensor_openbsd(char* sensor_name, int sensor_type) {
+    int mib[5];
+    size_t len, slen;
+    int ret;
+    struct sensor sensor;
+    struct sensordev sensordev;
+
+    mib[0] = CTL_HW;
+    mib[1] = HW_SENSORS;
+
+
+    for (int i = 0; i < 1024; i++) {
+
+        mib[2] = i;
+
+        len = sizeof(struct sensordev);
+        ret = sysctl(mib, 3, &sensordev, &len, NULL, 0);
+
+        if (ret == -1) {
+            continue;
+        }
+
+        mib[3] = sensor_type;
+
+        for (int j = 0; j < sensordev.maxnumt[sensor_type]; j++) {
+            mib[4] = j;
+            slen = sizeof(struct sensor);
+            ret = sysctl(mib, 5, &sensor, &slen, NULL, 0);
+
+            if (ret == -1) {
+                continue;
+            }
+
+            if (strcmp(sensordev.xname, sensor_name) == 0) {
+                return sensor;
+            }
+
+        }
+    }
+
+    return sensor;
+}
+#endif
 
 void draw_box(int top) {
     struct winsize w;

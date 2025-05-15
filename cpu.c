@@ -2,9 +2,16 @@
 #include <unistd.h>
 #include <stdlib.h>
 
+#if defined(__OpenBSD__)
+    #include <string.h>
+    #include <sys/time.h>
+    #include <sys/sysctl.h>
+    #include <sys/sensors.h>
+#endif
+
 #include "util/util.h"
 
-float cpu_cpu_max_freq_hz_hit, cpu_max_freq_hz = 0;
+float cpu_max_freq_hz_hit, cpu_max_freq_hz = 0;
 int cpu_temp_max = 0;
 
 void get_loadavg() {
@@ -15,7 +22,7 @@ void get_loadavg() {
         return;
     }
 
-    sprintf(loadavg_buff, "%0.2f %0.2f %0.2f", loadavg[0], loadavg[1], loadavg[2]);
+    snprintf(loadavg_buff, 32, "%0.2f %0.2f %0.2f", loadavg[0], loadavg[1], loadavg[2]);
 
     pretty_print("Load avg", loadavg_buff);
 }
@@ -26,16 +33,19 @@ void get_threads() {
     long threads = sysconf(_SC_NPROCESSORS_CONF);
     long threads_online = sysconf(_SC_NPROCESSORS_ONLN);
 
-    sprintf(threads_buff, "%ld (%ld)", threads, threads_online);
+    snprintf(threads_buff, 16, "%ld (%ld)", threads, threads_online);
 
     pretty_print("Threads", threads_buff);
 }
 
 void get_cpu_freq() {
-    #if __linux__
+    char freq_buff[16];
+    double freq_ghz, freq = 0;
+
+    #if defined(__linux__)
         FILE *fp;
-        char freq_buff[16], freq_max_buff[16];
-        float freq_ghz, freq_hz = 0;
+
+        char freq_max_buff[16];
 
         fp = fopen("/sys/devices/system/cpu/cpufreq/policy0/scaling_cur_freq", "r");
 
@@ -55,47 +65,71 @@ void get_cpu_freq() {
         fgets(freq_max_buff, 16, fp);
         fclose(fp);
 
-        freq_hz = atof(freq_buff);
-        freq_ghz = freq_hz / 1000 / 1000;
+        freq = atof(freq_buff);
+        freq_ghz = freq / 1000 / 1000; // KHz
         cpu_max_freq_hz = atof(freq_max_buff);
 
-        if (freq_hz > cpu_cpu_max_freq_hz_hit) {
-            cpu_cpu_max_freq_hz_hit = freq_hz;
-        }
-
-        print_progress("CPU freq", freq_hz, cpu_max_freq_hz);
-
+        print_progress("CPU freq", freq, cpu_max_freq_hz);
         printf(" (%.2f GHz)\n", freq_ghz);
+
+    #elif defined(__OpenBSD__)
+        struct sensor freq_sensor = get_sensor_openbsd("cpu0", SENSOR_FREQ);
+
+        freq = freq_sensor.value;
+        freq_ghz = freq / 1E15; // uHz
+
+        snprintf(freq_buff, 16, "%.2f GHz", freq_ghz);
+        pretty_print("CPU freq", freq_buff);
+
     #endif
+
+    if (freq > cpu_max_freq_hz_hit) {
+        cpu_max_freq_hz_hit = freq;
+    }
 }
 
 void get_cpu_freq_max() {
-    print_progress("Max CPU freq", cpu_cpu_max_freq_hz_hit, cpu_max_freq_hz);
-    printf(" (%.2f GHz)\n", cpu_cpu_max_freq_hz_hit / 1000 / 1000);
+    #if defined(__linux__)
+        print_progress("Max CPU freq", cpu_max_freq_hz_hit, cpu_max_freq_hz);
+        printf(" (%.2f GHz)\n", cpu_max_freq_hz_hit / 1000 / 1000);
+    #elif defined(__OpenBSD__)
+        char max_freq_buff[16];
+
+        snprintf(max_freq_buff, 16, "%.2f GHz", cpu_max_freq_hz_hit / 1E15);
+        pretty_print("Max CPU freq", max_freq_buff);
+    #endif
 }
 
 void get_cpu_temp() {
-    FILE *fp;
     char temp_buff[16];
 
     int temp = 0;
 
-    fp = fopen("/sys/class/thermal/thermal_zone0/temp", "r");
+    #if defined(__linux__)
+        FILE *fp;
 
-    if (fp == NULL) {
-        return;
-    }
+        fp = fopen("/sys/class/thermal/thermal_zone1/temp", "r");
 
-    fgets(temp_buff, 16, fp);
-    fclose(fp);
+        if (fp == NULL) {
+            return;
+        }
 
-    temp = atoi(temp_buff) / 1000;
+        fgets(temp_buff, 16, fp);
+        fclose(fp);
+
+        temp = atoi(temp_buff) / 1000;
+
+    #elif defined(__OpenBSD__)
+        struct sensor temp_sensor = get_sensor_openbsd("cpu0", SENSOR_TEMP);
+
+        temp = microkelvin_to_celsius(temp_sensor.value);
+    #endif
 
     if (temp > cpu_temp_max) {
         cpu_temp_max = temp;
     }
 
-    sprintf(temp_buff, "%dC", temp);
+    snprintf(temp_buff, 16, "%dC", temp);
 
     pretty_print("CPU temp", temp_buff);
 }
@@ -107,7 +141,7 @@ void get_cpu_temp_max() {
         return;
     }
 
-    sprintf(temp_max_buff, "%dC", cpu_temp_max);
+    snprintf(temp_max_buff, 16, "%dC", cpu_temp_max);
 
     pretty_print("Max CPU temp", temp_max_buff);
 }
