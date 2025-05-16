@@ -1,11 +1,7 @@
 OUTPUT = nixmon
 INSTALL_PATH = /usr/local/bin
 
-SOURCE_FILES = main.c gen.c cpu.c mem.c storage.c util/util.c
-
-ifeq ($(shell uname), Linux)
-	SOURCE_FILES += i915.c amdgpu.c
-endif
+SOURCE_FILES = main.c gen.c cpu.c mem.c storage.c i915.c amdgpu.c util/util.c
 
 all:
 	cc -Wall $(SOURCE_FILES) -o $(OUTPUT)
