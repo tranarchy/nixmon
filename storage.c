@@ -3,10 +3,9 @@
 
 #include "util/util.h"
 
-
 #if defined(__OpenBSD__)
     #define MOUNTPOINT "/home"
-#elif
+#else
     #define MOUNTPOINT "/"
 #endif
 

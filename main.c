@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <unistd.h>
 #include <stdlib.h>
 #include <signal.h>
 #include <termios.h>
@@ -23,13 +24,8 @@ int main() {
     tcsetattr(0, TCSANOW, &new);
 
     signal(SIGINT, INT_handler);
-
-    struct timeval tv;
     
     while (1) {
-        tv.tv_sec = 1;
-        tv.tv_usec = 0;
-
         printf(CLEAR);
 
         draw_box(1);
@@ -46,7 +42,7 @@ int main() {
     
         draw_box(0);
 
-        select(0, NULL, NULL, NULL, &tv);     
+        sleep(1);
     }
 
     return 0;

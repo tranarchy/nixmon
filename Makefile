@@ -1,2 +1,5 @@
 all:
-	cc -Wall *.c util/util.c -o nixmon
+	cc -Wall *.c */*.c -o nixmon
+
+install:
+	cp -f nixmon /usr/local/bin

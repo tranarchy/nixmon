@@ -22,7 +22,7 @@ void get_uptime() {
 
     int ret = 0;
 
-    #if __linux__
+    #if defined(__linux__)
         ret = clock_gettime(CLOCK_MONOTONIC, &timespec_buff);
     #else
         ret = clock_gettime(CLOCK_UPTIME, &timespec_buff);

@@ -1,11 +1,15 @@
 #include <stdio.h>
 #include <string.h>
 
-#if defined(__OpenBSD__)
+#if defined(__OpenBSD__) || defined(__FreeBSD__)
     #include <unistd.h>
 
     #include <sys/sysctl.h>
     #include <sys/vmmeter.h>
+#endif
+
+#if defined(__FreeBSD__)
+    #include <vm/vm_param.h>
 #endif
 
 #include "util/util.h"
@@ -49,32 +53,39 @@ void get_mem_usage() {
         mem_total /= 1024;
         used /= 1024;
 
-    #elif defined(__OpenBSD__)
-
+    #elif defined(__OpenBSD__) || defined(__FreeBSD__)
+        
         int mib[2];
-        size_t len;
+        size_t len, slen;
+        long long total;
 
         struct vmtotal vmtotal;
+
+        mib[0] = CTL_HW;
+        mib[1] = HW_PHYSMEM;
+
+        slen = sizeof(total);
+        int ret = sysctl(mib, 2, &total, &slen, NULL, 0);
+
+        if (ret == -1) {
+            return;
+        }
 
         mib[0] = CTL_VM;
         mib[1] = VM_METER;
 
         len = sizeof(struct vmtotal);
-        int ret = sysctl(mib, 2, &vmtotal, &len, NULL, 0);
+        ret = sysctl(mib, 2, &vmtotal, &len, NULL, 0);
 
         if (ret == -1) {
             return;
         }
 
         long long pagesize = sysconf(_SC_PAGESIZE);
-
-        long long active = vmtotal.t_avm * pagesize;
-
-        long long wired = vmtotal.t_vm * pagesize;
         long long free = vmtotal.t_free * pagesize;
 
-        used = get_mib(active);
-        mem_total = get_mib(wired + free);
+        used = get_mib(total - free);
+        mem_total = get_mib(total);
 
     #endif
 

@@ -2,10 +2,13 @@
 #include <unistd.h>
 #include <stdlib.h>
 
+#if defined(__OpenBSD__) || defined(__FreeBSD__)
+    #include <sys/sysctl.h>
+#endif
+
 #if defined(__OpenBSD__)
     #include <string.h>
     #include <sys/time.h>
-    #include <sys/sysctl.h>
     #include <sys/sensors.h>
 #endif
 
@@ -80,7 +83,22 @@ void get_cpu_freq() {
 
         snprintf(freq_buff, 16, "%.2f GHz", freq_ghz);
         pretty_print("CPU freq", freq_buff);
+    #elif defined(__FreeBSD__)
+        size_t len;
+        int freq_freebsd;
 
+        len = sizeof(freq_freebsd);
+        int ret = sysctlbyname("dev.cpu.0.freq", &freq_freebsd, &len, NULL, 0);
+
+        if (ret == -1) {
+            return;
+        }
+
+        freq = freq_freebsd;
+        freq_ghz = freq / 1000;
+
+        snprintf(freq_buff, 16, "%.2f GHz", freq_ghz);
+        pretty_print("CPU freq", freq_buff);
     #endif
 
     if (freq > cpu_max_freq_hz_hit) {
@@ -97,6 +115,11 @@ void get_cpu_freq_max() {
 
         snprintf(max_freq_buff, 16, "%.2f GHz", cpu_max_freq_hz_hit / 1E15);
         pretty_print("Max CPU freq", max_freq_buff);
+    #elif defined(__FreeBSD__)
+        char max_freq_buff[16];
+
+        snprintf(max_freq_buff, 16, "%.2f GHz", cpu_max_freq_hz_hit / 1000);
+        pretty_print("Max CPU freq", max_freq_buff);    
     #endif
 }
 
@@ -123,6 +146,17 @@ void get_cpu_temp() {
         struct sensor temp_sensor = get_sensor_openbsd("cpu0", SENSOR_TEMP);
 
         temp = microkelvin_to_celsius(temp_sensor.value);
+    #elif defined(__FreeBSD__)
+        size_t len;
+
+        len = sizeof(temp);
+        int ret = sysctlbyname("dev.cpu.0.temperature", &temp, &len, NULL, 0);
+
+        if (ret == -1) {
+            return;
+        }
+
+        temp = temp / 10 - 273.15;
     #endif
 
     if (temp > cpu_temp_max) {
