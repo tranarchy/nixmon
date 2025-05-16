@@ -20,9 +20,10 @@ void get_storage() {
     int free = get_gib(statvfs_buff.f_bfree * statvfs_buff.f_frsize);
     int used = total - free;
 
-    print_progress("Storage (" MOUNTPOINT ")", used, total);
+    int used_percent = 100.0 * used / total;
 
-    printf(" (%dGiB / %dGiB)\n", used, total);
+    print_progress("Storage (" MOUNTPOINT ")", used, total);
+    printf(" (%dGiB / %dGiB) (%d%%)\n", used, total, used_percent);
 }
 
 void storage_init() {

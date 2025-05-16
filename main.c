@@ -36,7 +36,7 @@ int main() {
         storage_init();
 
         #if defined(__linux__)
-            amd_gpu_init();
+            amdgpu_init();
             i915_init();
         #endif
     

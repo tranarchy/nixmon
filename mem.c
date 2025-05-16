@@ -14,17 +14,17 @@
 
 #include "util/util.h"
 
-long int mem_total, mem_max_used = 0;
+int mem_total, mem_used_max = 0;
 
 void get_mem_usage() {
-    long used = 0;
+    int used = 0;
 
     #if defined(__linux__)
 
         FILE *fp;
         char line[128];
 
-        long available = 0;
+        int available = 0;
 
         fp = fopen("/proc/meminfo", "r");
 
@@ -34,15 +34,19 @@ void get_mem_usage() {
 
         while (fgets(line, sizeof(line), fp)) {
             if (strstr(line, "MemTotal:") != NULL) {
-                if (sscanf(line, "MemTotal: %ld kB", &mem_total) == 1) {
+                if (sscanf(line, "MemTotal: %d kB", &mem_total) == 1) {
                     continue;
                 }
             }
 
             if (strstr(line, "MemAvailable:") != NULL) {
-                if (sscanf(line, "MemAvailable: %ld kB", &available) == 1) {
+                if (sscanf(line, "MemAvailable: %d kB", &available) == 1) {
                     continue;
                 }
+            }
+
+            if (mem_total > 0 && available > 0) {
+                break;
             }
         }
 
@@ -89,19 +93,19 @@ void get_mem_usage() {
 
     #endif
 
-    if (used > mem_max_used) {
-        mem_max_used = used;
+    if (used > mem_used_max) {
+        mem_used_max = used;
     }
 
     print_progress("RAM usage", used, mem_total);
 
-    printf(" (%ldMiB / %ldMiB)\n", used, mem_total);
+    printf(" (%dMiB / %dMiB)\n", used, mem_total);
 }
 
 void get_mem_usage_max() {
-    print_progress("Max RAM usage", mem_max_used, mem_total);
+    print_progress("Max RAM usage", mem_used_max, mem_total);
 
-    printf(" (%ldMiB / %ldMiB)\n", mem_max_used, mem_total);
+    printf(" (%dMiB / %dMiB)\n", mem_used_max, mem_total);
 }
 
 void mem_init() {

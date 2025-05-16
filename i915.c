@@ -6,7 +6,7 @@
 
 #define CARD0_PATH_I915 "/sys/class/drm/card0/"
 
-int i915_freq_max, i915_freq_cap = 0;
+int i915_freq_max, i915_freq_hit_max = 0;
 
 void get_i915_gpu_freq() {
     FILE *fp;
@@ -38,19 +38,19 @@ void get_i915_gpu_freq() {
     fclose(fp);
 
     freq = atoi(freq_buff);
-    i915_freq_cap = atoi(freq_cap_buff);
+    i915_freq_max = atoi(freq_cap_buff);
 
-    if (freq > i915_freq_max) {
-        i915_freq_max = freq;
+    if (freq > i915_freq_hit_max) {
+        i915_freq_hit_max = freq;
     }
 
-    print_progress("GPU freq", freq, i915_freq_cap);
-    printf(" (%dMHz / %dMHz)\n", freq, i915_freq_cap);
+    print_progress("GPU freq", freq, i915_freq_max);
+    printf(" (%dMHz / %dMHz)\n", freq, i915_freq_max);
 }
 
 void get_i915_gpu_freq_max() {
-    print_progress("Max GPU freq", i915_freq_max, i915_freq_cap);
-    printf(" (%dMHz / %dMHz)\n", i915_freq_max, i915_freq_cap);
+    print_progress("Max GPU freq", i915_freq_hit_max, i915_freq_max);
+    printf(" (%dMHz / %dMHz)\n", i915_freq_hit_max, i915_freq_max);
 }
 
 int i915_exists() {
