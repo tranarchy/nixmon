@@ -20,12 +20,10 @@ void get_uptime() {
     struct timespec timespec_buff;
     char uptime_buff[32];
 
-    int ret = 0;
-
     #if defined(__linux__) || defined(__NetBSD__)
-        ret = clock_gettime(CLOCK_MONOTONIC, &timespec_buff);
+        int ret = clock_gettime(CLOCK_MONOTONIC, &timespec_buff);
     #else
-        ret = clock_gettime(CLOCK_UPTIME, &timespec_buff);
+        int ret = clock_gettime(CLOCK_UPTIME, &timespec_buff);
     #endif
 
     if (ret == -1) {

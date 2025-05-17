@@ -90,9 +90,15 @@ void get_mem_usage() {
         }
 
         long long pagesize = sysconf(_SC_PAGESIZE);
-        long long free = vmtotal.t_free * pagesize;
 
-        used = get_mib(total - free);
+        #if defined(__OpenBSD__)
+            long long active = vmtotal.t_avm * pagesize;
+            used = get_mib(active);
+        #else
+            long long free = vmtotal.t_free * pagesize;
+            used = get_mib(total - free);
+        #endif
+
         mem_total = get_mib(total);
 
     #endif

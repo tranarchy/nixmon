@@ -15,12 +15,24 @@
 #include "util/util.h"
 
 #if defined(__linux__)
-    long long cpu_usage[10];
-    long long cpu_usage_prev[10] = { 0 };
+    #define CPU_IDLE_STATE 3
+    #define CPU_STATES_NUM 10
+#elif defined(__OpenBSD__)
+    #define CPU_IDLE_STATE 5 
+    #define CPU_STATES_NUM 6
 #else
-    long long cpu_usage[5];
-    long long cpu_usage_prev[5] = { 0 };
+    #define CPU_IDLE_STATE 4
+    #define CPU_STATES_NUM 5
 #endif
+
+#if defined(__FreeBSD__)
+    #define SYSCTL_FREQ_NAME "dev.cpu.0.freq"
+#elif defined(__NetBSD__)
+    #define SYSCTL_FREQ_NAME "machdep.cpu.frequency.current"
+#endif
+
+long long cpu_usage[CPU_STATES_NUM];
+long long cpu_usage_prev[CPU_STATES_NUM] = { 0 };
 
 double cpu_freq_hit_max, cpu_freq_max = 0;
 
@@ -79,40 +91,49 @@ void get_cpu_usage() {
             &cpu_usage[0], &cpu_usage[1], &cpu_usage[2], &cpu_usage[3], &cpu_usage[4], &cpu_usage[5], &cpu_usage[6], &cpu_usage[7], &cpu_usage[8], &cpu_usage[9]
         );
 
-        for (int i = 0; i < 10; i++) {
+        for (int i = 0; i < CPU_STATES_NUM; i++) {
             cpu_usage_sum += cpu_usage[i] - cpu_usage_prev[i];
         }
 
-        cpu_idle = cpu_usage[3] - cpu_usage_prev[3];
+        cpu_idle = cpu_usage[CPU_IDLE_STATE] - cpu_usage_prev[CPU_IDLE_STATE];
         cpu_non_idle_usage_sum = cpu_usage_sum - cpu_idle;
 
         cpu_usage_percent = 100.0 * cpu_non_idle_usage_sum / cpu_usage_sum;
         
-        for (int i = 0; i < 10; i++) {
+        for (int i = 0; i < CPU_STATES_NUM; i++) {
             cpu_usage_prev[i] = cpu_usage[i];
         }
 
-    #elif defined(__FreeBSD__) || defined(__NetBSD__)
+    #elif defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__)
 
         size_t len;
         len = sizeof(cpu_usage);
 
-        int ret = sysctlbyname("kern.cp_time", &cpu_usage, &len, NULL, 0);
+        #if defined(__OpenBSD__)
+            int mib[2];
+
+            mib[0] = CTL_KERN;
+            mib[1] = KERN_CPTIME;
+
+            int ret = sysctl(mib, 2, &cpu_usage, &len, NULL, 0);
+        #else
+            int ret = sysctlbyname("kern.cp_time", &cpu_usage, &len, NULL, 0);
+        #endif
 
         if (ret == -1) {
             return;
         }
 
-        for (int i = 0; i < 5; i++) {
+        for (int i = 0; i < CPU_STATES_NUM; i++) {
             cpu_usage_sum += cpu_usage[i] - cpu_usage_prev[i];
         }
 
-        cpu_idle = cpu_usage[4] - cpu_usage_prev[4];
+        cpu_idle = cpu_usage[CPU_IDLE_STATE] - cpu_usage_prev[CPU_IDLE_STATE];
         cpu_non_idle_usage_sum = cpu_usage_sum - cpu_idle;
 
         cpu_usage_percent = 100.0 * cpu_non_idle_usage_sum / cpu_usage_sum;
         
-        for (int i = 0; i < 5; i++) {
+        for (int i = 0; i < CPU_STATES_NUM; i++) {
             cpu_usage_prev[i] = cpu_usage[i];
         }
 
@@ -179,11 +200,7 @@ void get_cpu_freq() {
         int freq_bsd;
 
         len = sizeof(freq_bsd);
-        #if defined(__FreeBSD__)
-            int ret = sysctlbyname("dev.cpu.0.freq", &freq_bsd, &len, NULL, 0);
-        #else
-            int ret = sysctlbyname("machdep.cpu.frequency.current", &freq_bsd, &len, NULL, 0);
-        #endif
+        int ret = sysctlbyname(SYSCTL_FREQ_NAME, &freq_bsd, &len, NULL, 0);
 
         if (ret == -1) {
             return;

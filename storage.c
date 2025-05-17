@@ -11,7 +11,7 @@
     #include <sys/param.h>
 #endif
 
-#elif defined(__FreeBSD__) || defined(__NetBSD__)
+#elif defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__)
     #include <sys/mount.h>
 #endif
 
@@ -63,7 +63,7 @@ void get_storage() {
         }
         fclose(fp);
     
-    #elif defined(__FreeBSD__) || defined(__NetBSD__)
+    #elif defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__)
 
 
         #if defined(__NetBSD__)
