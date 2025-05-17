@@ -14,11 +14,11 @@
 #include "ansi.h"
 
 int get_gib(long long value) {
-    return value / (1024 * 1024 * 1024);
+    return value / (1024.0 * 1024.0 * 1024.0);
 }
 
 int get_mib(long long value) {
-    return value / (1024 * 1024);
+    return value / (1024.0 * 1024.0);
 }
 
 #if defined(__OpenBSD__)
@@ -108,6 +108,11 @@ void print_progress(char* name, float value, float max_value) {
     int percent = (value / max_value) * 100;
 
     printf("\t%s%s %s", FG, name, RESET);
+
+
+    if (strlen(name) < 7) {
+        printf("\t");
+    }
 
     printf("\t[");
     for (int i = 0; i < 50; i++) {

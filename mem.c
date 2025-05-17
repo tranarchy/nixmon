@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#if defined(__OpenBSD__) || defined(__FreeBSD__)
+#if defined(__OpenBSD__) || defined(__FreeBSD__) || defined(__NetBSD__)
     #include <unistd.h>
 
     #include <sys/sysctl.h>
@@ -57,7 +57,7 @@ void get_mem_usage() {
         mem_total /= 1024;
         used /= 1024;
 
-    #elif defined(__OpenBSD__) || defined(__FreeBSD__)
+    #elif defined(__OpenBSD__) || defined(__FreeBSD__) || defined(__NetBSD__)
         
         int mib[2];
         size_t len, slen;
@@ -66,7 +66,11 @@ void get_mem_usage() {
         struct vmtotal vmtotal;
 
         mib[0] = CTL_HW;
-        mib[1] = HW_PHYSMEM;
+        #if defined(__FreeBSD__)
+            mib[1] = HW_PHYSMEM;
+        #else
+            mib[1] = HW_PHYSMEM64;
+        #endif
 
         slen = sizeof(total);
         int ret = sysctl(mib, 2, &total, &slen, NULL, 0);

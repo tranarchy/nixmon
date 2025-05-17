@@ -2,7 +2,7 @@
 #include <unistd.h>
 #include <stdlib.h>
 
-#if defined(__OpenBSD__) || defined(__FreeBSD__)
+#if defined(__OpenBSD__) || defined(__FreeBSD__) || defined(__NetBSD__)
     #include <sys/sysctl.h>
 #endif
 
@@ -92,7 +92,7 @@ void get_cpu_usage() {
             cpu_usage_prev[i] = cpu_usage[i];
         }
 
-    #elif defined(__FreeBSD__)
+    #elif defined(__FreeBSD__) || defined(__NetBSD__)
 
         size_t len;
         len = sizeof(cpu_usage);
@@ -174,18 +174,22 @@ void get_cpu_freq() {
 
         snprintf(freq_buff, 16, "%.2f GHz", freq_ghz);
         pretty_print("CPU freq", freq_buff);
-    #elif defined(__FreeBSD__)
+    #elif defined(__FreeBSD__) || defined(__NetBSD__)
         size_t len;
-        int freq_freebsd;
+        int freq_bsd;
 
-        len = sizeof(freq_freebsd);
-        int ret = sysctlbyname("dev.cpu.0.freq", &freq_freebsd, &len, NULL, 0);
+        len = sizeof(freq_bsd);
+        #if defined(__FreeBSD__)
+            int ret = sysctlbyname("dev.cpu.0.freq", &freq_bsd, &len, NULL, 0);
+        #else
+            int ret = sysctlbyname("machdep.cpu.frequency.current", &freq_bsd, &len, NULL, 0);
+        #endif
 
         if (ret == -1) {
             return;
         }
 
-        freq = freq_freebsd;
+        freq = freq_bsd;
         freq_ghz = freq / 1000;
 
         snprintf(freq_buff, 16, "%.2f GHz", freq_ghz);
@@ -206,7 +210,7 @@ void get_cpu_freq_max() {
 
         snprintf(max_freq_buff, 16, "%.2f GHz", cpu_freq_hit_max / 1E15);
         pretty_print("Max CPU freq", max_freq_buff);
-    #elif defined(__FreeBSD__)
+    #elif defined(__FreeBSD__) || defined(__NetBSD__)
         char max_freq_buff[16];
 
         snprintf(max_freq_buff, 16, "%.2f GHz", cpu_freq_hit_max / 1000);
