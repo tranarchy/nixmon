@@ -1,6 +1,6 @@
-#define FG "\e[1;34m"
-#define BG "\e[44m"
+#define FG "\033[1;34m"
+#define BG "\033[44m"
 
-#define RESET "\e[0m"
+#define RESET "\033[0m"
 
-#define CLEAR "\e[1;1H\e[2J"
+#define CLEAR "\033[1;1H\033[2J"

@@ -4,19 +4,25 @@
 
 #include "util/util.h"
 
-void get_os(struct utsname utsname_buff) {
+int get_os(struct utsname utsname_buff) {
     pretty_print("OS", utsname_buff.sysname);
+
+    return 0;
 }
 
-void get_kernel(struct utsname utsname_buff) {
+int get_kernel(struct utsname utsname_buff) {
     pretty_print("Kernel", utsname_buff.release);
+
+    return 0;
 }
 
-void get_arch(struct utsname utsname_buff) {
+int get_arch(struct utsname utsname_buff) {
     pretty_print("Arch", utsname_buff.machine);
+
+    return 0;
 }
 
-void get_uptime() {
+int get_uptime(void) {
     struct timespec timespec_buff;
     char uptime_buff[32];
 
@@ -27,7 +33,7 @@ void get_uptime() {
     #endif
 
     if (ret == -1) {
-        return;
+        return ret;
     }
     
     int uptime_sec = timespec_buff.tv_sec;
@@ -38,11 +44,17 @@ void get_uptime() {
     snprintf(uptime_buff, 32, "%dd %dh %dm", uptime_day, uptime_hour, uptime_min);
     
     pretty_print("Uptime", uptime_buff);
+
+    return 0;
 }
 
-void gen_init() {
+int gen_init(void) {
     struct utsname utsname_buff;
-    uname(&utsname_buff);
+    int ret = uname(&utsname_buff);
+
+    if (ret == -1) {
+        return ret;
+    }
 
     pretty_print_title("gen");
     get_os(utsname_buff);
@@ -51,4 +63,6 @@ void gen_init() {
     printf("\n");
     get_uptime();
     printf("\n");
+
+    return 0;
 }

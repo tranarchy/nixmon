@@ -70,7 +70,7 @@ struct sensor get_sensor_openbsd(char* sensor_name, int sensor_type) {
 }
 #endif
 
-void draw_box(int top) {
+int draw_box(int top) {
     struct winsize w;
     ioctl(0, TIOCGWINSZ, &w);
 
@@ -87,9 +87,11 @@ void draw_box(int top) {
     }
 
     printf(top ? "┓\n\n%s" : "┛\n\n%s", RESET);
+
+    return 0;
 }
 
-void pretty_print(char* content, char* content2) {
+int pretty_print(const char* content, const char* content2) {
 
     printf("\t%s%s %s", FG, content, RESET);
 
@@ -98,13 +100,17 @@ void pretty_print(char* content, char* content2) {
     }
 
     printf("\t%s\n", content2);
+
+    return 0;
 }
 
-void pretty_print_title(char* content) {
+int pretty_print_title(char* content) {
     printf("\t\b\b%s%s\n\n%s", BG, content, RESET);
+
+    return 0;
 }
 
-void print_progress(char* name, float value, float max_value) {
+int print_progress(char* name, float value, float max_value) {
     int percent = (value / max_value) * 100;
 
     printf("\t%s%s %s", FG, name, RESET);
@@ -123,4 +129,6 @@ void print_progress(char* name, float value, float max_value) {
         }
     }
     printf("]");
+
+    return 0;
 }

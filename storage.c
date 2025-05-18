@@ -15,7 +15,7 @@
     #include <sys/mount.h>
 #endif
 
-void get_storage() {
+int get_storage(void) {
 
     struct statvfs statvfs_buff;
 
@@ -30,7 +30,7 @@ void get_storage() {
         while ((mntent = getmntent(fp)) != NULL) {
             int ret = -1;
 
-            for (int i = 0; i < sizeof(allowed_filesystems) / sizeof(allowed_filesystems[0]); i++) {
+            for (long unsigned int i = 0; i < sizeof(allowed_filesystems) / sizeof(allowed_filesystems[0]); i++) {
                 if (strcmp(allowed_filesystems[i], mntent->mnt_type) == 0) {
                     ret = 0;
                     break;
@@ -42,7 +42,7 @@ void get_storage() {
             }
 
             if (statvfs(mntent->mnt_dir, &statvfs_buff) == -1) {
-                return;
+                continue;
             }
         
             long long total = statvfs_buff.f_blocks * statvfs_buff.f_frsize;
@@ -75,7 +75,7 @@ void get_storage() {
         int count = getmntinfo(&statfs, MNT_WAIT);
 
         if (count == 0) {
-            return;
+            return -1;
         }
 
         #if defined(__FreeBSD__)
@@ -86,7 +86,7 @@ void get_storage() {
             #if defined(__FreeBSD__)
                 int ret = 0;
 
-                for (int j = 0; j < sizeof(mnt_blacklist) / sizeof(mnt_blacklist[0]); j++) {
+                for (long unsigned int j = 0; j < sizeof(mnt_blacklist) / sizeof(mnt_blacklist[0]); j++) {
                     if (strstr(statfs[i].f_mntonname, mnt_blacklist[j]) != NULL) {
                         ret = -1;
                     }
@@ -98,7 +98,7 @@ void get_storage() {
             #endif
 
             if (statvfs(statfs[i].f_mntonname, &statvfs_buff) == -1) {
-                return;
+                continue;
             }
         
             long long total = statvfs_buff.f_blocks * statvfs_buff.f_frsize;
@@ -117,10 +117,14 @@ void get_storage() {
             }
         }
     #endif
+
+    return 0;
 }
 
-void storage_init() {
+int storage_init(void) {
     pretty_print_title("storage");
     get_storage();
     printf("\n");
+
+    return 0;
 }

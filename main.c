@@ -17,7 +17,7 @@ void INT_handler(int sig) {
     exit(0);
 }
 
-int main() {
+int main(void) {
     tcgetattr(0, &old);
     new = old;
     new.c_lflag &= ~(ICANON | ECHO);
@@ -34,11 +34,7 @@ int main() {
         cpu_init();
         mem_init();
         storage_init();
-
-        #if defined(__linux__)
-            amdgpu_init();
-            i915_init();
-        #endif
+        gpu_init();
     
         draw_box(0);
 

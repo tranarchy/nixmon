@@ -38,20 +38,24 @@ double cpu_freq_hit_max, cpu_freq_max = 0;
 
 int cpu_temp_max, cpu_usage_percent_max = 0;
 
-void get_loadavg() {
+int get_loadavg(void) {
     double loadavg[3];
     char loadavg_buff[32];
 
-    if (getloadavg(loadavg, 3) == -1) {
-        return;
+    int ret = getloadavg(loadavg, 3);
+
+    if (ret == -1) {
+        return ret;
     }
 
     snprintf(loadavg_buff, 32, "%0.2f %0.2f %0.2f", loadavg[0], loadavg[1], loadavg[2]);
 
     pretty_print("Load avg", loadavg_buff);
+
+    return 0;
 }
 
-void get_threads() {
+int get_threads(void) {
     char threads_buff[16];
 
     long threads = sysconf(_SC_NPROCESSORS_CONF);
@@ -60,9 +64,11 @@ void get_threads() {
     snprintf(threads_buff, 16, "%ld (%ld)", threads, threads_online);
 
     pretty_print("Threads", threads_buff);
+
+    return 0;
 }
 
-void get_cpu_usage() {
+int get_cpu_usage(void) {
 
     int cpu_usage_percent = 0;
     
@@ -76,11 +82,11 @@ void get_cpu_usage() {
         fp = fopen("/proc/stat", "r");
 
         if (fp == NULL) {
-            return;
+            return -1;
         }
 
         if (fgets(line, sizeof(line), fp) == NULL) {
-            return;
+            return -1;
         }
 
         fclose(fp);
@@ -90,19 +96,6 @@ void get_cpu_usage() {
             "cpu %lld %lld %lld %lld %lld %lld %lld %lld %lld %lld",
             &cpu_usage[0], &cpu_usage[1], &cpu_usage[2], &cpu_usage[3], &cpu_usage[4], &cpu_usage[5], &cpu_usage[6], &cpu_usage[7], &cpu_usage[8], &cpu_usage[9]
         );
-
-        for (int i = 0; i < CPU_STATES_NUM; i++) {
-            cpu_usage_sum += cpu_usage[i] - cpu_usage_prev[i];
-        }
-
-        cpu_idle = cpu_usage[CPU_IDLE_STATE] - cpu_usage_prev[CPU_IDLE_STATE];
-        cpu_non_idle_usage_sum = cpu_usage_sum - cpu_idle;
-
-        cpu_usage_percent = 100.0 * cpu_non_idle_usage_sum / cpu_usage_sum;
-        
-        for (int i = 0; i < CPU_STATES_NUM; i++) {
-            cpu_usage_prev[i] = cpu_usage[i];
-        }
 
     #elif defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__)
 
@@ -121,24 +114,23 @@ void get_cpu_usage() {
         #endif
 
         if (ret == -1) {
-            return;
+            return ret;
         }
-
-        for (int i = 0; i < CPU_STATES_NUM; i++) {
-            cpu_usage_sum += cpu_usage[i] - cpu_usage_prev[i];
-        }
-
-        cpu_idle = cpu_usage[CPU_IDLE_STATE] - cpu_usage_prev[CPU_IDLE_STATE];
-        cpu_non_idle_usage_sum = cpu_usage_sum - cpu_idle;
-
-        cpu_usage_percent = 100.0 * cpu_non_idle_usage_sum / cpu_usage_sum;
-        
-        for (int i = 0; i < CPU_STATES_NUM; i++) {
-            cpu_usage_prev[i] = cpu_usage[i];
-        }
-
         
     #endif
+
+    for (int i = 0; i < CPU_STATES_NUM; i++) {
+        cpu_usage_sum += cpu_usage[i] - cpu_usage_prev[i];
+    }
+
+    cpu_idle = cpu_usage[CPU_IDLE_STATE] - cpu_usage_prev[CPU_IDLE_STATE];
+    cpu_non_idle_usage_sum = cpu_usage_sum - cpu_idle;
+
+    cpu_usage_percent = 100.0 * cpu_non_idle_usage_sum / cpu_usage_sum;
+        
+    for (int i = 0; i < CPU_STATES_NUM; i++) {
+        cpu_usage_prev[i] = cpu_usage[i];
+    }
 
     if (cpu_usage_percent > cpu_usage_percent_max) {
         cpu_usage_percent_max = cpu_usage_percent;
@@ -146,14 +138,18 @@ void get_cpu_usage() {
 
     print_progress("CPU usage", cpu_usage_percent, 100);
     printf(" (%d%%)\n", cpu_usage_percent);
+
+    return 0;
 }
 
-void get_cpu_usage_max() {
+int get_cpu_usage_max(void) {
     print_progress("Max CPU usage", cpu_usage_percent_max, 100);
     printf(" (%d%%)\n", cpu_usage_percent_max);
+
+    return 0;
 }
 
-void get_cpu_freq() {
+int get_cpu_freq(void) {
     char freq_buff[16];
     double freq_ghz, freq = 0;
 
@@ -165,7 +161,7 @@ void get_cpu_freq() {
         fp = fopen("/sys/devices/system/cpu/cpufreq/policy0/scaling_cur_freq", "r");
 
         if (fp == NULL) {
-            return;
+            return -1;
         }
 
         fgets(freq_buff, 16, fp);
@@ -174,7 +170,7 @@ void get_cpu_freq() {
         fp = fopen("/sys/devices/system/cpu/cpufreq/policy0/scaling_max_freq", "r");
 
         if (fp == NULL) {
-            return;
+            return -1;
         }
 
         fgets(freq_max_buff, 16, fp);
@@ -203,7 +199,7 @@ void get_cpu_freq() {
         int ret = sysctlbyname(SYSCTL_FREQ_NAME, &freq_bsd, &len, NULL, 0);
 
         if (ret == -1) {
-            return;
+            return ret;
         }
 
         freq = freq_bsd;
@@ -216,9 +212,11 @@ void get_cpu_freq() {
     if (freq > cpu_freq_hit_max) {
         cpu_freq_hit_max = freq;
     }
+
+    return 0;
 }
 
-void get_cpu_freq_max() {
+int get_cpu_freq_max(void) {
     #if defined(__linux__)
         print_progress("Max CPU freq", cpu_freq_hit_max, cpu_freq_max);
         printf(" (%.2f GHz)\n", cpu_freq_hit_max / 1000 / 1000);
@@ -233,9 +231,11 @@ void get_cpu_freq_max() {
         snprintf(max_freq_buff, 16, "%.2f GHz", cpu_freq_hit_max / 1000);
         pretty_print("Max CPU freq", max_freq_buff);    
     #endif
+
+    return 0;
 }
 
-void get_cpu_temp() {
+int get_cpu_temp(void) {
     char temp_buff[16];
 
     int temp = 0;
@@ -246,7 +246,7 @@ void get_cpu_temp() {
         fp = fopen("/sys/class/thermal/thermal_zone1/temp", "r");
 
         if (fp == NULL) {
-            return;
+            return -1;
         }
 
         fgets(temp_buff, 16, fp);
@@ -265,7 +265,7 @@ void get_cpu_temp() {
         int ret = sysctlbyname("dev.cpu.0.temperature", &temp, &len, NULL, 0);
 
         if (ret == -1) {
-            return;
+            return ret;
         }
 
         temp = temp / 10 - 273.15;
@@ -275,24 +275,28 @@ void get_cpu_temp() {
         cpu_temp_max = temp;
     }
 
-    snprintf(temp_buff, 16, "%dC", temp);
+    snprintf(temp_buff, 16, "%d°C", temp);
 
     pretty_print("CPU temp", temp_buff);
+
+    return 0;
 }
 
-void get_cpu_temp_max() {
+int get_cpu_temp_max(void) {
     char temp_max_buff[16];
 
     if (cpu_temp_max == 0) {
-        return;
+        return -1;
     }
 
-    snprintf(temp_max_buff, 16, "%dC", cpu_temp_max);
+    snprintf(temp_max_buff, 16, "%d°C", cpu_temp_max);
 
     pretty_print("Max CPU temp", temp_max_buff);
+
+    return 0;
 }
 
-void cpu_init() {
+int cpu_init(void) {
     pretty_print_title("cpu");
     get_threads();
     printf("\n");
@@ -307,4 +311,6 @@ void cpu_init() {
     printf("\n");
     get_loadavg();
     printf("\n");
+
+    return 0;
 }

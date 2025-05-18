@@ -16,7 +16,7 @@
 
 int mem_total, mem_used_max = 0;
 
-void get_mem_usage() {
+int get_mem_usage(void) {
     int used = 0;
 
     #if defined(__linux__)
@@ -29,7 +29,7 @@ void get_mem_usage() {
         fp = fopen("/proc/meminfo", "r");
 
         if (fp == NULL) {
-            return;
+            return -1;
         }
 
         while (fgets(line, sizeof(line), fp)) {
@@ -76,7 +76,7 @@ void get_mem_usage() {
         int ret = sysctl(mib, 2, &total, &slen, NULL, 0);
 
         if (ret == -1) {
-            return;
+            return ret;
         }
 
         mib[0] = CTL_VM;
@@ -86,7 +86,7 @@ void get_mem_usage() {
         ret = sysctl(mib, 2, &vmtotal, &len, NULL, 0);
 
         if (ret == -1) {
-            return;
+            return ret;
         }
 
         long long pagesize = sysconf(_SC_PAGESIZE);
@@ -110,17 +110,22 @@ void get_mem_usage() {
     print_progress("RAM usage", used, mem_total);
 
     printf(" (%dMiB / %dMiB)\n", used, mem_total);
+
+    return 0;
 }
 
-void get_mem_usage_max() {
+int get_mem_usage_max(void) {
     print_progress("Max RAM usage", mem_used_max, mem_total);
-
     printf(" (%dMiB / %dMiB)\n", mem_used_max, mem_total);
+
+    return 0;
 }
 
-void mem_init() {
+int mem_init(void) {
     pretty_print_title("mem");
     get_mem_usage();
     get_mem_usage_max();
     printf("\n");
+
+    return 0;
 }

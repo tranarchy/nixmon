@@ -1,7 +1,7 @@
-void draw_box(int top);
-void pretty_print_title(char* content);
-void pretty_print(char* content, char* content2);
-void print_progress(char* name, float value, float max_value);
+int draw_box(int top);
+int pretty_print_title(char* content);
+int pretty_print(const char* content, const char* content2);
+int print_progress(char* name, float value, float max_value);
 
 int get_mib(long long value);
 int get_gib(long long value);

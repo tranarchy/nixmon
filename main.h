@@ -1,9 +1,5 @@
-void gen_init();
-void cpu_init();
-void mem_init();
-void storage_init();
-
-#if defined(__linux__)
-    void i915_init();
-    void amdgpu_init();
-#endif
+int gen_init(void);
+int cpu_init(void);
+int mem_init(void);
+int gpu_init(void);
+int storage_init(void);
