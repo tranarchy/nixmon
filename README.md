@@ -1,7 +1,7 @@
 # nixmon
 
-<p align="center">
-  <img src="https://github.com/user-attachments/assets/485b0c04-fe77-47fa-86c9-f4c1ef256761">
+<p>
+  <img src="https://github.com/user-attachments/assets/3a1ac18e-aa5f-4268-8f6b-6288731ad31f">
 </p>
 <p align="center">Hardware monitoring tool for UNIX like systems written in C</p>
 
@@ -14,6 +14,7 @@ It also tracks the maximum values reached by your components (e.g., GPU power, C
 
 ## Build-time dependencies
 - C99 compliant compiler
+- libdrm
 - make
 
 
@@ -25,14 +26,6 @@ cd nixmon
 make
 make install
 ```
-
-## GPU support
-
-Right now GPU information is only available on Linux
-
-- `amdgpu` full support (VRAM, power, freq, temp)
-- `i915` partial support (freq)
-- `nvidia` no support
 
 ## FreeBSD
 
