@@ -5,6 +5,7 @@
 #include "util/util.h"
 
 #if defined(__linux__)
+    #include <limits.h>
     #include <mntent.h>
 
 #if defined(__NetBSD__)
@@ -12,12 +13,53 @@
 #endif
 
 #elif defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__)
+    #include <sys/syslimits.h>
     #include <sys/mount.h>
 #endif
 
-int get_storage(void) {
+struct storage_info {
+    char mount_point[PATH_MAX];
+    char size_suffix[4];
 
+    int total;
+    int used;
+};
+
+struct storage_info storage_info[32];
+
+int storage_count;
+
+int get_storage_size(char *mount_point, struct storage_info *storage_info) {
     struct statvfs statvfs_buff;
+
+    if (statvfs(mount_point, &statvfs_buff) == -1) {
+        return -1;
+    }
+
+    long long total = statvfs_buff.f_blocks * statvfs_buff.f_frsize;
+    long long free = statvfs_buff.f_bfree * statvfs_buff.f_frsize;
+
+    long long used = total - free;
+
+    strlcpy(storage_info->mount_point, mount_point, PATH_MAX);
+
+    if (get_gib(total) == 0) {
+        storage_info->used = get_mib(used);
+        storage_info->total = get_mib(total);
+        strlcpy(storage_info->size_suffix, "MiB", 4);
+    } else {
+        storage_info->used = get_gib(used);
+        storage_info->total = get_gib(total);
+        strlcpy(storage_info->size_suffix, "GiB", 4);
+    }
+
+    return 0;
+}
+
+
+void get_storages(struct storage_info *storage_info) {
+
+    storage_count = 0;
 
     #if defined(__linux__)
 
@@ -27,6 +69,7 @@ int get_storage(void) {
         char *allowed_filesystems[] = { "ext2", "ext3", "ext4", "jfs", "xfs", "vfat", "exfat", "ntfs", "ntfs-3g", "btrfs", "zfs", "iso9660" };
 
         fp = fopen("/etc/mtab", "r");
+
         while ((mntent = getmntent(fp)) != NULL) {
             int ret = -1;
 
@@ -41,24 +84,13 @@ int get_storage(void) {
                 continue;
             }
 
-            if (statvfs(mntent->mnt_dir, &statvfs_buff) == -1) {
+            ret = get_storage_size(mntent->mnt_dir, &storage_info[storage_count]);
+           
+            if (ret == -1) {
                 continue;
             }
-        
-            long long total = statvfs_buff.f_blocks * statvfs_buff.f_frsize;
-            long long free = statvfs_buff.f_bfree * statvfs_buff.f_frsize;
-        
-            long long used = total - free;
-
-            int used_percent = 100.0 * used / total;
-        
-            print_progress(mntent->mnt_dir, used, total);
-
-            if (get_gib(total) == 0) {
-                printf(" (%dMiB / %dMiB) (%d%%)\n", get_mib(used), get_mib(total), used_percent);
-            } else {
-                printf(" (%dGiB / %dGiB) (%d%%)\n", get_gib(used), get_gib(total), used_percent);
-            }
+           
+            storage_count++;
         
         }
         fclose(fp);
@@ -72,17 +104,17 @@ int get_storage(void) {
             struct statfs *statfs;
         #endif
     
-        int count = getmntinfo(&statfs, MNT_WAIT);
+        storage_count = getmntinfo(&statfs, MNT_WAIT);
 
-        if (count == 0) {
-            return -1;
+        if (storage_count == 0) {
+            return;
         }
 
         #if defined(__FreeBSD__)
             char *mnt_blacklist[] = { "/dev", "/home", "/zroot", "/usr", "/tmp", "/var" };
         #endif
 
-        for (int i = 0; i < count; i++) {
+        for (int i = 0; i < storage_count; i++) {
             #if defined(__FreeBSD__)
                 int ret = 0;
 
@@ -97,34 +129,26 @@ int get_storage(void) {
                 }
             #endif
 
-            if (statvfs(statfs[i].f_mntonname, &statvfs_buff) == -1) {
-                continue;
-            }
-        
-            long long total = statvfs_buff.f_blocks * statvfs_buff.f_frsize;
-            long long free = statvfs_buff.f_bfree * statvfs_buff.f_frsize;
-        
-            long long used = total - free;
+            get_storage_size(statfs[i].f_mntonname, &storage_info[i]);
 
-            int used_percent = 100.0 * used / total;
-        
-            print_progress(statfs[i].f_mntonname, used, total);
-
-            if (get_gib(total) == 0) {
-                printf(" (%dMiB / %dMiB) (%d%%)\n", get_mib(used), get_mib(total), used_percent);
-            } else {
-                printf(" (%dGiB / %dGiB) (%d%%)\n", get_gib(used), get_gib(total), used_percent);
-            }
         }
     #endif
-
-    return 0;
 }
 
-int storage_init(void) {
-    pretty_print_title("storage");
-    get_storage();
-    printf("\n");
+void storage_init(void) {
+   
+    get_storages(storage_info);
+    
+    print_title("storage");
+    for (int i = 0; i < storage_count; i++) {
+        struct storage_info storage;
 
-    return 0;
+        storage = storage_info[i];
+
+        int used_percent = 100.0 * storage.used / storage.total;
+
+        print_progress(storage.mount_point, storage.used, storage.total);
+        printf(" (%d%s / %d%s) (%d%%)\n", storage.used, storage.size_suffix, storage.total, storage.size_suffix, used_percent);
+    }
+    printf("\n");
 }

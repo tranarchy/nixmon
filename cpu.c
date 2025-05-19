@@ -31,46 +31,56 @@
     #define SYSCTL_FREQ_NAME "machdep.cpu.frequency.current"
 #endif
 
+struct cpu_info {
+    long threads;
+    long threads_online;
+
+    int usage;
+    int usage_max;
+
+    double freq;
+    double freq_max;
+
+    #if defined(__linux__)
+        double freq_total;
+    #endif
+
+    int temp;
+    int temp_max;
+
+    double loadavg[3];
+};
+
+struct cpu_info cpu_info;
+
 long long cpu_usage[CPU_STATES_NUM];
 long long cpu_usage_prev[CPU_STATES_NUM] = { 0 };
 
-double cpu_freq_hit_max, cpu_freq_max = 0;
-
-int cpu_temp_max, cpu_usage_percent_max = 0;
-
-int get_loadavg(void) {
-    double loadavg[3];
-    char loadavg_buff[32];
-
-    int ret = getloadavg(loadavg, 3);
+int get_loadavg(struct cpu_info *cpu_info) {
+    int ret = getloadavg(cpu_info->loadavg, 3);
 
     if (ret == -1) {
         return ret;
     }
 
-    snprintf(loadavg_buff, 32, "%0.2f %0.2f %0.2f", loadavg[0], loadavg[1], loadavg[2]);
+    return 0;
+}
 
-    pretty_print("Load avg", loadavg_buff);
+int get_threads(struct cpu_info *cpu_info) {
+    cpu_info->threads = sysconf(_SC_NPROCESSORS_CONF);
+    if (cpu_info->threads == -1) {
+        return -1;
+    }
+
+    cpu_info->threads_online = sysconf(_SC_NPROCESSORS_ONLN);
+    if (cpu_info->threads_online == -1) {
+        return -1;
+    }
 
     return 0;
 }
 
-int get_threads(void) {
-    char threads_buff[16];
-
-    long threads = sysconf(_SC_NPROCESSORS_CONF);
-    long threads_online = sysconf(_SC_NPROCESSORS_ONLN);
-
-    snprintf(threads_buff, 16, "%ld (%ld)", threads, threads_online);
-
-    pretty_print("Threads", threads_buff);
-
-    return 0;
-}
-
-int get_cpu_usage(void) {
-
-    int cpu_usage_percent = 0;
+int get_cpu_usage(struct cpu_info *cpu_info) {
     
     long long cpu_idle = 0, cpu_usage_sum = 0, cpu_non_idle_usage_sum = 0;
 
@@ -126,36 +136,25 @@ int get_cpu_usage(void) {
     cpu_idle = cpu_usage[CPU_IDLE_STATE] - cpu_usage_prev[CPU_IDLE_STATE];
     cpu_non_idle_usage_sum = cpu_usage_sum - cpu_idle;
 
-    cpu_usage_percent = 100.0 * cpu_non_idle_usage_sum / cpu_usage_sum;
+    cpu_info->usage = 100.0 * cpu_non_idle_usage_sum / cpu_usage_sum;
         
     for (int i = 0; i < CPU_STATES_NUM; i++) {
         cpu_usage_prev[i] = cpu_usage[i];
     }
 
-    if (cpu_usage_percent > cpu_usage_percent_max) {
-        cpu_usage_percent_max = cpu_usage_percent;
+    if ( cpu_info->usage > cpu_info->usage_max) {
+        cpu_info->usage_max =  cpu_info->usage;
     }
 
-    print_progress("CPU usage", cpu_usage_percent, 100);
-    printf(" (%d%%)\n", cpu_usage_percent);
-
     return 0;
 }
 
-int get_cpu_usage_max(void) {
-    print_progress("Max CPU usage", cpu_usage_percent_max, 100);
-    printf(" (%d%%)\n", cpu_usage_percent_max);
-
-    return 0;
-}
-
-int get_cpu_freq(void) {
-    char freq_buff[16];
-    double freq_ghz, freq = 0;
-
+int get_cpu_freq(struct cpu_info *cpu_info) {
     #if defined(__linux__)
+
         FILE *fp;
 
+        char freq_buff[16];
         char freq_max_buff[16];
 
         fp = fopen("/sys/devices/system/cpu/cpufreq/policy0/scaling_cur_freq", "r");
@@ -176,22 +175,17 @@ int get_cpu_freq(void) {
         fgets(freq_max_buff, 16, fp);
         fclose(fp);
 
-        freq = atof(freq_buff);
-        freq_ghz = freq / 1000 / 1000; // KHz
-        cpu_freq_max = atof(freq_max_buff);
-
-        print_progress("CPU freq", freq, cpu_freq_max);
-        printf(" (%.2f GHz)\n", freq_ghz);
+        cpu_info->freq = atof(freq_buff) / 1000 / 1000; // KHz
+        cpu_info->freq_total = atof(freq_max_buff) / 1000 / 1000;
 
     #elif defined(__OpenBSD__)
+
         struct sensor freq_sensor = get_sensor_openbsd("cpu0", SENSOR_FREQ);
 
-        freq = freq_sensor.value;
-        freq_ghz = freq / 1E15; // μHz
+        cpu_info->freq = freq_sensor.value / 1E15; // μHz
 
-        snprintf(freq_buff, 16, "%.2f GHz", freq_ghz);
-        pretty_print("CPU freq", freq_buff);
     #elif defined(__FreeBSD__) || defined(__NetBSD__)
+
         size_t len;
         int freq_bsd;
 
@@ -202,46 +196,23 @@ int get_cpu_freq(void) {
             return ret;
         }
 
-        freq = freq_bsd;
-        freq_ghz = freq / 1000;
+        cpu_info->freq = freq_bsd / 1000;
 
-        snprintf(freq_buff, 16, "%.2f GHz", freq_ghz);
-        pretty_print("CPU freq", freq_buff);
     #endif
 
-    if (freq > cpu_freq_hit_max) {
-        cpu_freq_hit_max = freq;
+    if (cpu_info->freq > cpu_info->freq_max) {
+        cpu_info->freq_max = cpu_info->freq;
     }
 
     return 0;
 }
 
-int get_cpu_freq_max(void) {
+int get_cpu_temp(struct cpu_info *cpu_info) {
     #if defined(__linux__)
-        print_progress("Max CPU freq", cpu_freq_hit_max, cpu_freq_max);
-        printf(" (%.2f GHz)\n", cpu_freq_hit_max / 1000 / 1000);
-    #elif defined(__OpenBSD__)
-        char max_freq_buff[16];
-
-        snprintf(max_freq_buff, 16, "%.2f GHz", cpu_freq_hit_max / 1E15);
-        pretty_print("Max CPU freq", max_freq_buff);
-    #elif defined(__FreeBSD__) || defined(__NetBSD__)
-        char max_freq_buff[16];
-
-        snprintf(max_freq_buff, 16, "%.2f GHz", cpu_freq_hit_max / 1000);
-        pretty_print("Max CPU freq", max_freq_buff);    
-    #endif
-
-    return 0;
-}
-
-int get_cpu_temp(void) {
-    char temp_buff[16];
-
-    int temp = 0;
-
-    #if defined(__linux__)
+       
         FILE *fp;
+
+        char temp_buff[16];
 
         fp = fopen("/sys/class/thermal/thermal_zone1/temp", "r");
 
@@ -252,65 +223,92 @@ int get_cpu_temp(void) {
         fgets(temp_buff, 16, fp);
         fclose(fp);
 
-        temp = atoi(temp_buff) / 1000;
+        cpu_info->temp = atoi(temp_buff) / 1000;
 
     #elif defined(__OpenBSD__)
+
         struct sensor temp_sensor = get_sensor_openbsd("cpu0", SENSOR_TEMP);
 
-        temp = microkelvin_to_celsius(temp_sensor.value);
+        cpu_info->temp = microkelvin_to_celsius(temp_sensor.value);
+
     #elif defined(__FreeBSD__)
+
         size_t len;
 
-        len = sizeof(temp);
-        int ret = sysctlbyname("dev.cpu.0.temperature", &temp, &len, NULL, 0);
+        len = sizeof(cpu_info->temp);
+        int ret = sysctlbyname("dev.cpu.0.temperature", &cpu_info->temp, &len, NULL, 0);
 
         if (ret == -1) {
             return ret;
         }
 
-        temp = temp / 10 - 273.15;
+        cpu_info->temp = temp / 10 - 273.15;
+
     #endif
 
-    if (temp > cpu_temp_max) {
-        cpu_temp_max = temp;
+    if (cpu_info->temp >  cpu_info->temp_max) {
+        cpu_info->temp_max =  cpu_info->temp;
     }
-
-    snprintf(temp_buff, 16, "%d°C", temp);
-
-    pretty_print("CPU temp", temp_buff);
 
     return 0;
 }
 
-int get_cpu_temp_max(void) {
-    char temp_max_buff[16];
+void cpu_init(void) {
 
-    if (cpu_temp_max == 0) {
-        return -1;
+    print_title("cpu");
+    if (get_threads(&cpu_info) != -1) {
+        char threads_buff[16];
+        snprintf(threads_buff, 16, "%ld (%ld)", cpu_info.threads, cpu_info.threads_online);
+        pretty_print("Threads", threads_buff);
+        printf("\n");
+    }
+   
+    if (get_cpu_usage(&cpu_info) != -1) {
+        print_progress("CPU usage", cpu_info.usage, 100);
+        printf(" (%d%%)\n", cpu_info.usage);
+
+        print_progress("Max CPU usage", cpu_info.usage_max, 100);
+        printf(" (%d%%)\n", cpu_info.usage_max);
+        printf("\n");
+    }
+   
+    if (get_cpu_freq(&cpu_info) != -1) {
+        #if defined(__linux__)
+            print_progress("CPU freq", cpu_info.freq , cpu_info.freq_total);
+            printf(" (%.2f GHz)\n", cpu_info.freq);
+
+            print_progress("Max CPU freq", cpu_info.freq_max, cpu_info.freq_total);
+            printf(" (%.2f GHz)\n", cpu_info.freq_max);
+        #else
+            char freq_buff[16];
+
+            snprintf(freq_buff, 16, "%.2f GHz", cpu_info.freq);
+            pretty_print("CPU freq", freq_buff);
+
+            snprintf(freq_buff, 16, "%.2f GHz", cpu_info.freq_max);
+            pretty_print("Max CPU freq", freq_buff);
+        #endif
+
+        printf("\n");
     }
 
-    snprintf(temp_max_buff, 16, "%d°C", cpu_temp_max);
+   
+    if (get_cpu_temp(&cpu_info) != -1) {
+        char temp_buff[16];
+        snprintf(temp_buff, 16, "%d°C", cpu_info.temp);
+        pretty_print("CPU temp", temp_buff);
 
-    pretty_print("Max CPU temp", temp_max_buff);
+        snprintf(temp_buff, 16, "%d°C", cpu_info.temp_max);
+        pretty_print("CPU temp", temp_buff);
+        printf("\n");
+    }
+   
+    if (get_loadavg(&cpu_info) != -1) {
+        char loadavg_buff[32];
 
-    return 0;
-}
-
-int cpu_init(void) {
-    pretty_print_title("cpu");
-    get_threads();
-    printf("\n");
-    get_cpu_usage();
-    get_cpu_usage_max();
-    printf("\n");
-    get_cpu_freq();
-    get_cpu_freq_max();
-    printf("\n");
-    get_cpu_temp();
-    get_cpu_temp_max();
-    printf("\n");
-    get_loadavg();
-    printf("\n");
-
-    return 0;
+        snprintf(loadavg_buff, 32, "%0.2f %0.2f %0.2f", cpu_info.loadavg[0], cpu_info.loadavg[1], cpu_info.loadavg[2]);
+        pretty_print("Load avg", loadavg_buff);
+        printf("\n");
+    }
+    
 }

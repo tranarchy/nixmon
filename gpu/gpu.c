@@ -3,18 +3,16 @@
 
 #include "gpu.h"
 
-int gpu_init(void) {
+void gpu_init(void) {
     int fd;
 
-    fd = open("/dev/dri/renderD128", O_RDWR);
+    fd = open("/dev/dri/renderD128", O_RDONLY);
 
     if (fd == -1) {
-        return fd;
+        return;
     }
 
     amdgpu_init(fd);
 
     close(fd);
-
-    return 0;
 }

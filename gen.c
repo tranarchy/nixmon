@@ -4,27 +4,17 @@
 
 #include "util/util.h"
 
-int get_os(struct utsname utsname_buff) {
-    pretty_print("OS", utsname_buff.sysname);
+struct gen_info {
+    int uptime_day;
+    int uptime_hour;
+    int uptime_min;
+};
 
-    return 0;
-}
+struct gen_info gen_info;
 
-int get_kernel(struct utsname utsname_buff) {
-    pretty_print("Kernel", utsname_buff.release);
-
-    return 0;
-}
-
-int get_arch(struct utsname utsname_buff) {
-    pretty_print("Arch", utsname_buff.machine);
-
-    return 0;
-}
-
-int get_uptime(void) {
+int get_uptime(struct gen_info *gen_info) {
     struct timespec timespec_buff;
-    char uptime_buff[32];
+   
 
     #if defined(__linux__) || defined(__NetBSD__)
         int ret = clock_gettime(CLOCK_MONOTONIC, &timespec_buff);
@@ -37,32 +27,29 @@ int get_uptime(void) {
     }
     
     int uptime_sec = timespec_buff.tv_sec;
-    int uptime_day = uptime_sec / 60 / 60 / 24;
-    int uptime_hour = (uptime_sec / 60 / 60) - (uptime_day * 24);
-    int uptime_min = (uptime_sec / 60) - (uptime_hour * 60) - (uptime_day * 24);
 
-    snprintf(uptime_buff, 32, "%dd %dh %dm", uptime_day, uptime_hour, uptime_min);
-    
-    pretty_print("Uptime", uptime_buff);
+    gen_info->uptime_day = uptime_sec / 60 / 60 / 24;
+    gen_info->uptime_hour = (uptime_sec / 60 / 60) - ( gen_info->uptime_day * 24);
+    gen_info->uptime_min = (uptime_sec / 60) - ( gen_info->uptime_hour * 60) - ( gen_info->uptime_day * 24);
 
     return 0;
 }
 
-int gen_init(void) {
+void gen_init(void) {
     struct utsname utsname_buff;
-    int ret = uname(&utsname_buff);
 
-    if (ret == -1) {
-        return ret;
+    print_title("gen");
+    if (uname(&utsname_buff) != -1) {
+        pretty_print("OS", utsname_buff.sysname);
+        pretty_print("Kernel", utsname_buff.release);
+        pretty_print("Arch", utsname_buff.machine);
+        printf("\n");
     }
 
-    pretty_print_title("gen");
-    get_os(utsname_buff);
-    get_arch(utsname_buff);
-    get_kernel(utsname_buff);
-    printf("\n");
-    get_uptime();
-    printf("\n");
-
-    return 0;
+    if (get_uptime(&gen_info) != -1) {
+        char uptime_buff[32];
+        snprintf(uptime_buff, 32, "%dd %dh %dm", gen_info.uptime_day, gen_info.uptime_hour, gen_info.uptime_min);
+        pretty_print("Uptime", uptime_buff);
+        printf("\n");
+    }
 }

@@ -1,5 +1,5 @@
-int gen_init(void);
-int cpu_init(void);
-int mem_init(void);
-int gpu_init(void);
-int storage_init(void);
+void gen_init(void);
+void cpu_init(void);
+void mem_init(void);
+void gpu_init(void);
+void storage_init(void);

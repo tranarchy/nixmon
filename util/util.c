@@ -22,55 +22,57 @@ int get_mib(long long value) {
 }
 
 #if defined(__OpenBSD__)
-int microkelvin_to_celsius(long int value) {
-    return (value - 273150000) / 1E6;
-}
 
-struct sensor get_sensor_openbsd(char* sensor_name, int sensor_type) {
-    int mib[5];
-    size_t len, slen;
-    int ret;
-    struct sensor sensor;
-    struct sensordev sensordev;
+    int microkelvin_to_celsius(long int value) {
+        return (value - 273150000) / 1E6;
+    }
 
-    mib[0] = CTL_HW;
-    mib[1] = HW_SENSORS;
+    struct sensor get_sensor_openbsd(char *sensor_name, int sensor_type) {
+        int mib[5];
+        size_t len, slen;
+        int ret;
+        struct sensor sensor;
+        struct sensordev sensordev;
+
+        mib[0] = CTL_HW;
+        mib[1] = HW_SENSORS;
 
 
-    for (int i = 0; i < 1024; i++) {
+        for (int i = 0; i < 1024; i++) {
 
-        mib[2] = i;
+            mib[2] = i;
 
-        len = sizeof(struct sensordev);
-        ret = sysctl(mib, 3, &sensordev, &len, NULL, 0);
-
-        if (ret == -1) {
-            continue;
-        }
-
-        mib[3] = sensor_type;
-
-        for (int j = 0; j < sensordev.maxnumt[sensor_type]; j++) {
-            mib[4] = j;
-            slen = sizeof(struct sensor);
-            ret = sysctl(mib, 5, &sensor, &slen, NULL, 0);
+            len = sizeof(struct sensordev);
+            ret = sysctl(mib, 3, &sensordev, &len, NULL, 0);
 
             if (ret == -1) {
                 continue;
             }
 
-            if (strcmp(sensordev.xname, sensor_name) == 0) {
-                return sensor;
-            }
+            mib[3] = sensor_type;
 
+            for (int j = 0; j < sensordev.maxnumt[sensor_type]; j++) {
+                mib[4] = j;
+                slen = sizeof(struct sensor);
+                ret = sysctl(mib, 5, &sensor, &slen, NULL, 0);
+
+                if (ret == -1) {
+                    continue;
+                }
+
+                if (strcmp(sensordev.xname, sensor_name) == 0) {
+                    return sensor;
+                }
+
+            }
         }
+
+        return sensor;
     }
 
-    return sensor;
-}
 #endif
 
-int draw_box(int top) {
+void draw_box(int top) {
     struct winsize w;
     ioctl(0, TIOCGWINSZ, &w);
 
@@ -87,11 +89,9 @@ int draw_box(int top) {
     }
 
     printf(top ? "┓\n\n%s" : "┛\n\n%s", RESET);
-
-    return 0;
 }
 
-int pretty_print(const char* content, const char* content2) {
+void pretty_print(char *content, char *content2) {
 
     printf("\t%s%s %s", FG, content, RESET);
 
@@ -100,17 +100,13 @@ int pretty_print(const char* content, const char* content2) {
     }
 
     printf("\t%s\n", content2);
-
-    return 0;
 }
 
-int pretty_print_title(char* content) {
+void print_title(char *content) {
     printf("\t\b\b%s%s\n\n%s", BG, content, RESET);
-
-    return 0;
 }
 
-int print_progress(char* name, float value, float max_value) {
+void print_progress(char *name, float value, float max_value) {
     int percent = (value / max_value) * 100;
 
     printf("\t%s%s %s", FG, name, RESET);
@@ -129,6 +125,4 @@ int print_progress(char* name, float value, float max_value) {
         }
     }
     printf("]");
-
-    return 0;
 }

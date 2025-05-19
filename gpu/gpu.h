@@ -1,1 +1,1 @@
-int amdgpu_init(int fd);
+void amdgpu_init(int fd);

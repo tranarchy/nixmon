@@ -14,17 +14,23 @@
 
 #include "util/util.h"
 
-int mem_total, mem_used_max = 0;
+struct mem_info {
+    int total;
 
-int get_mem_usage(void) {
-    int used = 0;
+    int used;
+    int used_max;
+};
+
+struct mem_info mem_info;
+
+int get_mem_usage(struct mem_info *mem_info) {
 
     #if defined(__linux__)
 
+        int available;
+
         FILE *fp;
         char line[128];
-
-        int available = 0;
 
         fp = fopen("/proc/meminfo", "r");
 
@@ -34,7 +40,7 @@ int get_mem_usage(void) {
 
         while (fgets(line, sizeof(line), fp)) {
             if (strstr(line, "MemTotal:") != NULL) {
-                if (sscanf(line, "MemTotal: %d kB", &mem_total) == 1) {
+                if (sscanf(line, "MemTotal: %d kB", &mem_info->total) == 1) {
                     continue;
                 }
             }
@@ -44,18 +50,14 @@ int get_mem_usage(void) {
                     continue;
                 }
             }
-
-            if (mem_total > 0 && available > 0) {
-                break;
-            }
         }
 
         fclose(fp);
 
-        used = mem_total - available;
+        mem_info->used = mem_info->total - available;
 
-        mem_total /= 1024;
-        used /= 1024;
+        mem_info->total /= 1024;
+        mem_info->used /= 1024;
 
     #elif defined(__OpenBSD__) || defined(__FreeBSD__) || defined(__NetBSD__)
         
@@ -93,39 +95,32 @@ int get_mem_usage(void) {
 
         #if defined(__OpenBSD__)
             long long active = vmtotal.t_avm * pagesize;
-            used = get_mib(active);
+            mem_info->used = get_mib(active);
         #else
             long long free = vmtotal.t_free * pagesize;
-            used = get_mib(total - free);
+            mem_info->used = get_mib(total - free);
         #endif
 
-        mem_total = get_mib(total);
+        mem_info->total = get_mib(total);
 
     #endif
 
-    if (used > mem_used_max) {
-        mem_used_max = used;
+    if (mem_info->used > mem_info->used_max) {
+        mem_info->used_max = mem_info->used;
     }
 
-    print_progress("RAM usage", used, mem_total);
-
-    printf(" (%dMiB / %dMiB)\n", used, mem_total);
-
     return 0;
 }
 
-int get_mem_usage_max(void) {
-    print_progress("Max RAM usage", mem_used_max, mem_total);
-    printf(" (%dMiB / %dMiB)\n", mem_used_max, mem_total);
+void mem_init(void) {
 
-    return 0;
-}
-
-int mem_init(void) {
-    pretty_print_title("mem");
-    get_mem_usage();
-    get_mem_usage_max();
-    printf("\n");
-
-    return 0;
+    if (get_mem_usage(&mem_info) != -1) {
+        print_title("mem");
+        print_progress("RAM usage", mem_info.used, mem_info.total);
+        printf(" (%dMiB / %dMiB)\n",  mem_info.used, mem_info.total);
+    
+        print_progress("Max RAM usage", mem_info.used_max, mem_info.total);
+        printf(" (%dMiB / %dMiB)\n",  mem_info.used_max, mem_info.total);
+        printf("\n");
+    }
 }
