@@ -2,6 +2,8 @@
 #include <unistd.h>
 #include <string.h>
 
+#include "xf86drm.h"
+
 #include "gpu.h"
 
 char *driver = NULL;
@@ -16,11 +18,31 @@ int get_gpu_fd(void) {
     return fd;
 }
 
+void get_driver(void) {
+    int fd = get_gpu_fd();
+
+
+    if (fd == -1) {
+        return;
+    }
+
+    drmVersionPtr drmVersion = drmGetVersion(fd);
+    driver = drmVersion->name;
+
+    close(fd);
+}
+
 
 void gpu_init(void) {
-
+    if (driver == NULL) {
+        get_driver();
+    } 
+    
     int fd = get_gpu_fd();
-    amdgpu_init(fd);        
+    if (strcmp(driver, "amdgpu") >= 0) {
+        amdgpu_init(fd);        
+    }
     close(fd);
 
+    //opengl_init();
 }
