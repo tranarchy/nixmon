@@ -299,7 +299,7 @@ void cpu_init(void) {
         pretty_print("CPU temp", temp_buff);
 
         snprintf(temp_buff, 16, "%d°C", cpu_info.temp_max);
-        pretty_print("CPU temp", temp_buff);
+        pretty_print("Max CPU temp", temp_buff);
         printf("\n");
     }
    
