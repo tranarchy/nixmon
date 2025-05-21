@@ -214,7 +214,7 @@ int get_cpu_temp(struct cpu_info *cpu_info) {
 
         char temp_buff[16];
 
-        fp = fopen("/sys/class/thermal/thermal_zone1/temp", "r");
+        fp = fopen("/sys/class/thermal/thermal_zone0/temp", "r");
 
         if (fp == NULL) {
             return -1;

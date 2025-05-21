@@ -25,8 +25,6 @@ struct amdgpu_info {
 
     int temp;
     int temp_max;
-
-    int exists;
 };
 
 struct amdgpu_info amdgpu_info;
@@ -143,9 +141,6 @@ int get_amdgpu_name(amdgpu_device_handle device, struct amdgpu_info *amdgpu_info
 }
 
 void amdgpu_init(int fd) {
-    if (amdgpu_info.exists == -1) {
-        return;
-    }
 
     uint32_t major_version;
     uint32_t minor_version;
@@ -155,7 +150,6 @@ void amdgpu_init(int fd) {
     int ret = amdgpu_device_initialize(fd, &major_version, &minor_version, &device);
 
     if (ret < 0) {
-        amdgpu_info.exists = -1;
         return;
     }
 
