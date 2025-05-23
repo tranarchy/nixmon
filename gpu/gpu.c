@@ -2,9 +2,12 @@
 #include <unistd.h>
 #include <string.h>
 
+#include "xf86drm.h"
+
 #include "gpu.h"
 
 char *driver = NULL;
+int no_driver = 0;
 
 int get_gpu_fd(void) {
     int fd = open("/dev/dri/renderD128", O_RDONLY);
@@ -16,11 +19,36 @@ int get_gpu_fd(void) {
     return fd;
 }
 
+void get_driver(void) {
+    int fd = get_gpu_fd();
+    drmVersionPtr drmVersion = drmGetVersion(fd);
+    close(fd);
+
+    if (drmVersion == NULL) {
+        no_driver = 1;
+
+        return;
+    }
+
+    driver = drmVersion->name;
+}
+
 
 void gpu_init(void) {
+    int fd;
 
-    int fd = get_gpu_fd();
-    amdgpu_init(fd);        
-    close(fd);
+    if (driver == NULL) {
+        if (!no_driver) {
+            get_driver();
+        } else {
+            return;
+        }
+    }
+
+    if (strcmp(driver, "amdgpu") == 0) {
+        fd = get_gpu_fd();
+        amdgpu_init(fd);        
+        close(fd);
+    }
 
 }
