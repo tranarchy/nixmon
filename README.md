@@ -1,7 +1,7 @@
 # nixmon
 
 <p>
-  <img src="https://github.com/user-attachments/assets/3a1ac18e-aa5f-4268-8f6b-6288731ad31f">
+  <img src="https://github.com/user-attachments/assets/7b7e3ae0-0cbd-4162-9596-13a88f1edc1d">
 </p>
 <p align="center">Hardware monitoring tool for UNIX like systems written in C</p>
 
@@ -11,12 +11,19 @@ nixmon is a hardware monitoring tool for your CPU, GPU, RAM and storage with an 
 
 It also tracks the maximum values reached by your components (e.g., GPU power, CPU temp), making it ideal to use during benchmarking, gaming or other heavy workloads
 
+## Supported systems
+- Linux
+- macOS*
+- FreeBSD
+- OpenBSD
+- NetBSD
+
+*No GPU info for macOS
 
 ## Build-time dependencies
 - C99 compliant compiler
-- libdrm
+- libdrm (on Linux and *BSD)
 - make
-
 
 ## Installing
 
@@ -26,6 +33,8 @@ cd nixmon
 make
 make install
 ```
+
+Use `make macos` instead of `make` if you are on macOS
 
 ## FreeBSD
 
