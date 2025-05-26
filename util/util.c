@@ -69,15 +69,15 @@ int get_mib(long long value) {
 
         return sensor;
     }
-
 #endif
+   
 
 void draw_box(int top) {
     struct winsize w;
     ioctl(0, TIOCGWINSZ, &w);
 
 
-    printf(top ? "%s%s┏" : "\n\n%s%s┗", RESET, FG);
+    printf(top ? "%s%s┏" : "%s%s┗", RESET, FG);
 
     int cols = w.ws_col - 2 - (top ? 6 : 0);
 

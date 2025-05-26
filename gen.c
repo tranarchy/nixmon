@@ -16,7 +16,7 @@ int get_uptime(struct gen_info *gen_info) {
     struct timespec timespec_buff;
    
 
-    #if defined(__linux__) || defined(__NetBSD__)
+    #if defined(__linux__) || defined(__NetBSD__) || defined(__APPLE__)
         int ret = clock_gettime(CLOCK_MONOTONIC, &timespec_buff);
     #else
         int ret = clock_gettime(CLOCK_UPTIME, &timespec_buff);

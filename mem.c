@@ -8,6 +8,14 @@
     #include <sys/vmmeter.h>
 #endif
 
+#if defined(__APPLE__)
+    #include <unistd.h>
+
+    #include <mach/mach.h>    
+    #include <sys/sysctl.h>
+    
+#endif
+
 #if defined(__FreeBSD__)
     #include <vm/vm_param.h>
 #endif
@@ -59,16 +67,24 @@ int get_mem_usage(struct mem_info *mem_info) {
         mem_info->total /= 1024;
         mem_info->used /= 1024;
 
-    #elif defined(__OpenBSD__) || defined(__FreeBSD__) || defined(__NetBSD__)
+    #elif defined(__OpenBSD__) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__APPLE__)
         
         int mib[2];
-        size_t len, slen;
+        size_t slen;
         long long total;
 
-        struct vmtotal vmtotal;
+        #if defined(__APPLE__)
+            mach_msg_type_number_t len = HOST_VM_INFO64_COUNT;
+
+            vm_statistics64_data_t vm_stats;            
+        #else
+            size_t len;
+
+            struct vmtotal vmtotal;
+        #endif
 
         mib[0] = CTL_HW;
-        #if defined(__FreeBSD__)
+        #if defined(__FreeBSD__) || defined(__APPLE__)
             mib[1] = HW_PHYSMEM;
         #else
             mib[1] = HW_PHYSMEM64;
@@ -81,21 +97,34 @@ int get_mem_usage(struct mem_info *mem_info) {
             return ret;
         }
 
-        mib[0] = CTL_VM;
-        mib[1] = VM_METER;
+        #if defined(__APPLE__)
+            ret = host_statistics64(mach_host_self(), HOST_VM_INFO64, (host_info64_t)&vm_stats, &len);
 
-        len = sizeof(struct vmtotal);
-        ret = sysctl(mib, 2, &vmtotal, &len, NULL, 0);
+            if (ret == -1) {
+                return ret;
+            }
+        #else
+            mib[0] = CTL_VM;
+            mib[1] = VM_METER;
 
-        if (ret == -1) {
-            return ret;
-        }
+            len = sizeof(vmtotal);
+            ret = sysctl(mib, 2, &vmtotal, &len, NULL, 0);
+
+            if (ret == -1) {
+                return ret;
+            }
+        #endif
 
         long long pagesize = sysconf(_SC_PAGESIZE);
 
         #if defined(__OpenBSD__)
             long long active = vmtotal.t_avm * pagesize;
             mem_info->used = get_mib(active);
+        #elif defined(__APPLE__)
+            long long active = vm_stats.active_count * pagesize;
+            long long wire = vm_stats.wire_count * pagesize;
+            long long compression = vm_stats.compressor_page_count * pagesize;
+            mem_info->used = get_mib(active + wire + compression);
         #else
             long long free = vmtotal.t_free * pagesize;
             mem_info->used = get_mib(total - free);

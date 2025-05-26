@@ -12,13 +12,17 @@
     #include <sys/param.h>
 #endif
 
-#elif defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__)
+#if defined(__APPLE__)
+    #include <limits.h>
+#endif
+
+#elif defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__APPLE__)
     #include <sys/syslimits.h>
     #include <sys/mount.h>
 #endif
 
 struct storage_info {
-    char mount_point[PATH_MAX];
+    char mount_point[16];
     char size_suffix[4];
 
     int total;
@@ -41,7 +45,13 @@ int get_storage_size(char *mount_point, struct storage_info *storage_info) {
 
     long long used = total - free;
 
-    strlcpy(storage_info->mount_point, mount_point, PATH_MAX);
+    if (strlen(mount_point) >= 12) {
+        strlcpy(storage_info->mount_point, mount_point, 12);
+        strlcat(storage_info->mount_point, "...", 16);
+    } else {
+        strlcpy(storage_info->mount_point, mount_point, 16);
+    }
+   
 
     if (get_gib(total) == 0) {
         storage_info->used = get_mib(used);
@@ -95,7 +105,7 @@ void get_storages(struct storage_info *storage_info) {
         }
         fclose(fp);
     
-    #elif defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__)
+    #elif defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__APPLE__)
 
 
         #if defined(__NetBSD__)
@@ -150,5 +160,7 @@ void storage_init(void) {
         print_progress(storage.mount_point, storage.used, storage.total);
         printf(" (%d%s / %d%s) (%d%%)\n", storage.used, storage.size_suffix, storage.total, storage.size_suffix, used_percent);
     }
+
     printf("\n");
+    
 }
