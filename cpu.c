@@ -8,6 +8,8 @@
 
 #if defined(__APPLE__)
     #include <mach/mach.h>
+    
+    #include "apple/cpu_temp.h"
 #endif
 
 #if defined(__OpenBSD__)
@@ -223,6 +225,8 @@ int get_cpu_freq(struct cpu_info *cpu_info) {
 
         cpu_info->freq = freq_bsd / 1000;
     #elif defined(__APPLE__)
+        // this is probably not the right way but apple deprecated hw.cpufrequency...
+
         int mib[2];
 
         int tbfreq;
@@ -299,6 +303,8 @@ int get_cpu_temp(struct cpu_info *cpu_info) {
 
         cpu_info->temp = temp / 10 - 273.15;
 
+    #elif defined(__APPLE__)
+        cpu_info->temp = get_macos_cpu_temp(0xff00, 5);
     #endif
 
     if (cpu_info->temp > cpu_info->temp_max) {

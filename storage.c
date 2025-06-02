@@ -5,15 +5,10 @@
 #include "util/util.h"
 
 #if defined(__linux__)
-    #include <limits.h>
     #include <mntent.h>
 
 #if defined(__NetBSD__)
     #include <sys/param.h>
-#endif
-
-#if defined(__APPLE__)
-    #include <limits.h>
 #endif
 
 #elif defined(__FreeBSD__) || defined(__NetBSD__) || defined(__OpenBSD__) || defined(__APPLE__)

@@ -18,6 +18,7 @@ void INT_handler(int sig) {
     signal(sig, SIG_IGN);
     tcsetattr(0, TCSANOW, &old);
     printf(CLEAR);
+    printf(SHOW_CURSOR);
     exit(0);
 }
 
@@ -26,6 +27,8 @@ int main(void) {
     new = old;
     new.c_lflag &= ~(ICANON | ECHO);
     tcsetattr(0, TCSANOW, &new);
+
+    printf(HIDE_CURSOR);
 
     signal(SIGINT, INT_handler);
     
