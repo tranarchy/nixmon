@@ -12,12 +12,11 @@ int get_mem_usage(struct mem_info *mem) {
     int mib[2];
 
     size_t len;
-    size_t slen;
     long long total;
 
     vm_statistics64_data_t vm_stats; 
 
-    mach_msg_type_number_t len = HOST_VM_INFO64_COUNT;
+    mach_msg_type_number_t slen = HOST_VM_INFO64_COUNT;
 
     mib[0] = CTL_HW;
     mib[1] = HW_PHYSMEM;
@@ -29,7 +28,7 @@ int get_mem_usage(struct mem_info *mem) {
         return ret;
     }
 
-    ret = host_statistics64(mach_host_self(), HOST_VM_INFO64, (host_info64_t)&vm_stats, &len);
+    ret = host_statistics64(mach_host_self(), HOST_VM_INFO64, (host_info64_t)&vm_stats, &slen);
 
     if (ret == -1) {
         return ret;

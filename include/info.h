@@ -15,7 +15,7 @@ struct cpu_info {
     double freq;
     double freq_max;
 
-    #if defined(__linux__)
+    #ifdef __linux__
         double freq_total;
     #endif
 
@@ -40,23 +40,25 @@ struct storage_info {
     int used;
 };
 
-struct gpu_info {
-    char name[64];
+#ifndef __APPLE__
+    struct gpu_info {
+        char name[64];
 
-    int usage;
-    int usage_max;
+        int usage;
+        int usage_max;
 
-    int vram_total;
+        int vram_total;
 
-    int vram;
-    int vram_max;
+        int vram;
+        int vram_max;
 
-    int power;
-    int power_max;
+        int power;
+        int power_max;
 
-    int freq;
-    int freq_max;
+        int freq;
+        int freq_max;
 
-    int temp;
-    int temp_max;
-};
+        int temp;
+        int temp_max;
+    };
+#endif

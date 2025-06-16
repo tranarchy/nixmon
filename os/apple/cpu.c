@@ -6,7 +6,6 @@
 
 #include <sys/sysctl.h>
 
-#include "cpu_temp.h"
 #include "../../include/info.h"
 #include "../../include/cpu.h"
 

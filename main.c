@@ -25,10 +25,14 @@ void int_handler(int sig) {
 
 int main(void) {
     struct gen_info gen = { 0 };
+   
     struct cpu_info cpu = { 0 };
     struct mem_info mem = { 0 };
     struct storage_info storages[32] = { 0 };
-    struct gpu_info gpu = { 0 };
+
+    #ifndef __APPLE__
+        struct gpu_info gpu = { 0 };
+    #endif
 
     tcgetattr(0, &old);
     new = old;
