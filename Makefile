@@ -3,13 +3,13 @@ INSTALL_PATH = /usr/local/bin
 
 MAIN_SOURCE_FILES = main.c gen.c cpu.c mem.c storage.c util/util.c
 COMMON_SOURCE_FILES =  common/gen.c common/cpu.c common/storage.c
-COMMON_BSD_SOURCE_FILES = common_bsd/storage.c common_bsd/mem.c
+COMMON_BSD_SOURCE_FILES = common/bsd/storage.c common/bsd/mem.c
 
-LINUX_SOURCES_FILES = linux/cpu.c linux/mem.c linux/storage.c
-OPENBSD_SOURCE_FILES = openbsd/cpu.c
-FREEBSD_SOURCE_FILES = freebsd/cpu.c
-NETBSD_SOURCE_FILES = netbsd/cpu.c
-MACOS_SOURCE_FILES = apple/cpu.c apple/mem.c common_bsd/storage.c apple/cpu_temp.m
+LINUX_SOURCES_FILES = os/linux/cpu.c os/linux/mem.c os/linux/storage.c
+OPENBSD_SOURCE_FILES = os/openbsd/cpu.c
+FREEBSD_SOURCE_FILES = os/freebsd/cpu.c
+NETBSD_SOURCE_FILES = os/netbsd/cpu.c
+MACOS_SOURCE_FILES = os/apple/cpu.c os/apple/mem.c os/apple/cpu_temp.m common/bsd/storage.c
 
 GPU_SOURCE_FILES = gpu/amdgpu.c gpu/gpu.c
 

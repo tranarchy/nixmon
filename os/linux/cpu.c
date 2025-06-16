@@ -4,8 +4,8 @@
 #include <unistd.h>
 #include <stdlib.h>
 
-#include "../include/info.h"
-#include "../include/cpu.h"
+#include "../../include/info.h"
+#include "../../include/cpu.h"
 
 #define CPU_IDLE_STATE 3
 #define CPU_STATES_NUM 10

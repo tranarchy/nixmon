@@ -9,8 +9,8 @@
     #include <sys/param.h>
 #endif
 
-#include "../include/info.h"
-#include "../include/storage.h"
+#include "../../include/info.h"
+#include "../../include/storage.h"
 
 
 void get_storages(struct storage_info *storages) {

@@ -7,8 +7,8 @@
 #include <sys/sysctl.h>
 
 #include "cpu_temp.h"
-#include "../include/info.h"
-#include "../include/cpu.h"
+#include "../../include/info.h"
+#include "../../include/cpu.h"
 
 #define CPU_IDLE_STATE 2
 #define CPU_STATES_NUM 4

@@ -8,8 +8,8 @@
     #include <vm/vm_param.h>
 #endif
 
-#include "../include/info.h"
-#include "../include/util.h"
+#include "../../include/info.h"
+#include "../../include/util.h"
 
 int get_mem_usage(struct mem_info *mem) {
     int mib[2];

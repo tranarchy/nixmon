@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "../include/info.h"
+#include "../../include/info.h"
 
 int get_mem_usage(struct mem_info *mem) {
 
