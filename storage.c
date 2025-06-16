@@ -2,6 +2,8 @@
 #include <string.h>
 #include <sys/statvfs.h>
 
+#include "info.h"
+
 #include "util/util.h"
 
 #if defined(__linux__)
@@ -16,19 +18,10 @@
     #include <sys/mount.h>
 #endif
 
-struct storage_info {
-    char mount_point[16];
-    char size_suffix[4];
-
-    int total;
-    int used;
-};
-
-struct storage_info storage_info[32];
 
 int storage_count;
 
-int get_storage_size(char *mount_point, struct storage_info *storage_info) {
+int get_storage_size(char *mount_point, struct storage_info *storages) {
     struct statvfs statvfs_buff;
 
     if (statvfs(mount_point, &statvfs_buff) == -1) {
@@ -41,28 +34,28 @@ int get_storage_size(char *mount_point, struct storage_info *storage_info) {
     long long used = total - free;
 
     if (strlen(mount_point) >= 12) {
-        strlcpy(storage_info->mount_point, mount_point, 12);
-        strlcat(storage_info->mount_point, "...", 16);
+        strlcpy(storages->mount_point, mount_point, 12);
+        strlcat(storages->mount_point, "...", 16);
     } else {
-        strlcpy(storage_info->mount_point, mount_point, 16);
+        strlcpy(storages->mount_point, mount_point, 16);
     }
    
 
     if (get_gib(total) == 0) {
-        storage_info->used = get_mib(used);
-        storage_info->total = get_mib(total);
-        strlcpy(storage_info->size_suffix, "MiB", 4);
+        storages->used = get_mib(used);
+        storages->total = get_mib(total);
+        strlcpy(storages->size_suffix, "MiB", 4);
     } else {
-        storage_info->used = get_gib(used);
-        storage_info->total = get_gib(total);
-        strlcpy(storage_info->size_suffix, "GiB", 4);
+        storages->used = get_gib(used);
+        storages->total = get_gib(total);
+        strlcpy(storages->size_suffix, "GiB", 4);
     }
 
     return 0;
 }
 
 
-void get_storages(struct storage_info *storage_info) {
+void get_storages(struct storage_info *storages) {
 
     storage_count = 0;
 
@@ -89,7 +82,7 @@ void get_storages(struct storage_info *storage_info) {
                 continue;
             }
 
-            ret = get_storage_size(mntent->mnt_dir, &storage_info[storage_count]);
+            ret = get_storage_size(mntent->mnt_dir, &storages[storage_count]);
            
             if (ret == -1) {
                 continue;
@@ -134,21 +127,21 @@ void get_storages(struct storage_info *storage_info) {
                 }
             #endif
 
-            get_storage_size(statfs[i].f_mntonname, &storage_info[i]);
+            get_storage_size(statfs[i].f_mntonname, &storages[i]);
 
         }
     #endif
 }
 
-void storage_init(void) {
+void storage_init(struct storage_info *storages) {
    
-    get_storages(storage_info);
+    get_storages(storages);
     
     print_title("storage");
     for (int i = 0; i < storage_count; i++) {
         struct storage_info storage;
 
-        storage = storage_info[i];
+        storage = storages[i];
 
         int used_percent = 100.0 * storage.used / storage.total;
 

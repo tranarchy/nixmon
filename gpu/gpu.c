@@ -4,7 +4,10 @@
 
 #include "xf86drm.h"
 
+#include "../info.h"
+
 #include "gpu.h"
+
 
 char *driver = NULL;
 int no_driver = 0;
@@ -34,7 +37,7 @@ void get_driver(void) {
 }
 
 
-void gpu_init(void) {
+void gpu_init(struct gpu_info *gpu) {
     int fd;
 
     if (driver == NULL) {
@@ -47,7 +50,7 @@ void gpu_init(void) {
 
     if (strcmp(driver, "amdgpu") == 0) {
         fd = get_gpu_fd();
-        amdgpu_init(fd);        
+        amdgpu_init(fd, gpu);        
         close(fd);
     }
 

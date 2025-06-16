@@ -4,49 +4,28 @@
 #include <libdrm/amdgpu.h>
 #include <libdrm/amdgpu_drm.h>
 
+#include "../info.h"
+
 #include "../util/util.h"
 
-struct amdgpu_info {
-    char name[64];
-
-    int usage;
-    int usage_max;
-
-    int vram_total;
-
-    int vram;
-    int vram_max;
-
-    int power;
-    int power_max;
-
-    int freq;
-    int freq_max;
-
-    int temp;
-    int temp_max;
-};
-
-struct amdgpu_info amdgpu_info;
-
-int get_amdgpu_usage(amdgpu_device_handle device, struct amdgpu_info *amdgpu_info) {
+int get_amdgpu_usage(amdgpu_device_handle device, struct gpu_info *gpu) {
     size_t len;
 
-    len = sizeof(amdgpu_info->usage);
-    int ret = amdgpu_query_sensor_info(device, AMDGPU_INFO_SENSOR_GPU_LOAD, len, &amdgpu_info->usage);
+    len = sizeof(gpu->usage);
+    int ret = amdgpu_query_sensor_info(device, AMDGPU_INFO_SENSOR_GPU_LOAD, len, &gpu->usage);
 
     if (ret < 0) {
         return ret;
     }
 
-    if (amdgpu_info->usage > amdgpu_info->usage_max) {
-        amdgpu_info->usage_max = amdgpu_info->usage;
+    if (gpu->usage > gpu->usage_max) {
+        gpu->usage_max = gpu->usage;
     }
 
     return 0;
 }
 
-int get_amdgpu_mem_usage(amdgpu_device_handle device, struct amdgpu_info *amdgpu_info) {
+int get_amdgpu_mem_usage(amdgpu_device_handle device, struct gpu_info *gpu) {
     long long mem, mem_max;
     size_t len, slen;
 
@@ -64,70 +43,70 @@ int get_amdgpu_mem_usage(amdgpu_device_handle device, struct amdgpu_info *amdgpu
         return ret;
     }
 
-    amdgpu_info->vram_total = get_mib(mem_max);
-    amdgpu_info->vram = get_mib(mem);
+    gpu->vram_total = get_mib(mem_max);
+    gpu->vram = get_mib(mem);
 
-    if (amdgpu_info->vram > amdgpu_info->vram_max) {
-        amdgpu_info->vram_max = amdgpu_info->vram;
+    if (gpu->vram > gpu->vram_max) {
+        gpu->vram_max = gpu->vram;
     }
 
     return 0;
 }
 
-int get_amdgpu_power(amdgpu_device_handle device, struct amdgpu_info *amdgpu_info) {
+int get_amdgpu_power(amdgpu_device_handle device, struct gpu_info *gpu) {
     size_t len;
 
-    len = sizeof(amdgpu_info->power);
-    int ret = amdgpu_query_sensor_info(device, AMDGPU_INFO_SENSOR_GPU_AVG_POWER, len, &amdgpu_info->power);
+    len = sizeof(gpu->power);
+    int ret = amdgpu_query_sensor_info(device, AMDGPU_INFO_SENSOR_GPU_AVG_POWER, len, &gpu->power);
 
     if (ret < 0) {
         return ret;
     }
 
-    if (amdgpu_info->power > amdgpu_info->power_max) {
-        amdgpu_info->power_max = amdgpu_info->power;
+    if (gpu->power > gpu->power_max) {
+        gpu->power_max = gpu->power;
     }
 
     return 0;
 }
 
-int get_amdgpu_temp(amdgpu_device_handle device, struct amdgpu_info *amdgpu_info) {
+int get_amdgpu_temp(amdgpu_device_handle device, struct gpu_info *gpu) {
     size_t len;
 
-    len = sizeof(amdgpu_info->temp);
-    int ret = amdgpu_query_sensor_info(device, AMDGPU_INFO_SENSOR_GPU_TEMP, len, &amdgpu_info->temp);
+    len = sizeof(gpu->temp);
+    int ret = amdgpu_query_sensor_info(device, AMDGPU_INFO_SENSOR_GPU_TEMP, len, &gpu->temp);
 
     if (ret < 0) {
         return ret;
     }
 
-    amdgpu_info->temp /= 1000;
+    gpu->temp /= 1000;
 
-    if (amdgpu_info->temp > amdgpu_info->temp_max) {
-        amdgpu_info->temp_max = amdgpu_info->temp;
+    if (gpu->temp > gpu->temp_max) {
+        gpu->temp_max = gpu->temp;
     }
 
     return 0;
 }
 
-int get_amdgpu_freq(amdgpu_device_handle device, struct amdgpu_info *amdgpu_info) {
+int get_amdgpu_freq(amdgpu_device_handle device, struct gpu_info *gpu) {
     size_t len;
 
-    len = sizeof(amdgpu_info->freq);
-    int ret = amdgpu_query_sensor_info(device, AMDGPU_INFO_SENSOR_GFX_SCLK, len, &amdgpu_info->freq);
+    len = sizeof(gpu->freq);
+    int ret = amdgpu_query_sensor_info(device, AMDGPU_INFO_SENSOR_GFX_SCLK, len, &gpu->freq);
 
     if (ret < 0) {
         return ret;
     }
 
-    if (amdgpu_info->freq > amdgpu_info->freq_max) {
-        amdgpu_info->freq_max = amdgpu_info->freq;
+    if (gpu->freq > gpu->freq_max) {
+        gpu->freq_max = gpu->freq;
     }
 
     return 0;
 }
 
-int get_amdgpu_name(amdgpu_device_handle device, struct amdgpu_info *amdgpu_info) {
+int get_amdgpu_name(amdgpu_device_handle device, struct gpu_info *gpu) {
 
     const char *name = amdgpu_get_marketing_name(device);
 
@@ -135,12 +114,12 @@ int get_amdgpu_name(amdgpu_device_handle device, struct amdgpu_info *amdgpu_info
         return -1;
     }
 
-    strlcpy(amdgpu_info->name, name, 64);
+    strlcpy(gpu->name, name, 64);
 
     return 0;
 }
 
-void amdgpu_init(int fd) {
+void amdgpu_init(int fd, struct gpu_info *gpu) {
 
     uint32_t major_version;
     uint32_t minor_version;
@@ -154,58 +133,58 @@ void amdgpu_init(int fd) {
     }
 
     print_title("gpu (amdgpu)");
-    if (get_amdgpu_name(device, &amdgpu_info) == 0) {
-        pretty_print("GPU name", amdgpu_info.name);
+    if (get_amdgpu_name(device, gpu) == 0) {
+        pretty_print("GPU name", gpu->name);
         printf("\n");
     }
 
-    if (get_amdgpu_usage(device, &amdgpu_info) == 0) {
-        print_progress("GPU usage", amdgpu_info.usage, 100);
-        printf(" (%d%%)\n", amdgpu_info.usage);
+    if (get_amdgpu_usage(device, gpu) == 0) {
+        print_progress("GPU usage", gpu->usage, 100);
+        printf(" (%d%%)\n", gpu->usage);
 
-        print_progress("Max GPU usage", amdgpu_info.usage_max, 100);
-        printf(" (%d%%)\n", amdgpu_info.usage_max);
+        print_progress("Max GPU usage", gpu->usage_max, 100);
+        printf(" (%d%%)\n", gpu->usage_max);
         printf("\n");
     }
 
-    if (get_amdgpu_mem_usage(device, &amdgpu_info) == 0) {
-        print_progress("VRAM usage", amdgpu_info.vram, amdgpu_info.vram_total);
-        printf(" (%dMiB / %dMiB)\n", amdgpu_info.vram, amdgpu_info.vram_total);
+    if (get_amdgpu_mem_usage(device, gpu) == 0) {
+        print_progress("VRAM usage", gpu->vram, gpu->vram_total);
+        printf(" (%dMiB / %dMiB)\n", gpu->vram, gpu->vram_total);
 
-        print_progress("Max VRAM usage", amdgpu_info.vram_max, amdgpu_info.vram_total);
-        printf(" (%dMiB / %dMiB)\n", amdgpu_info.vram_max, amdgpu_info.vram_total);
+        print_progress("Max VRAM usage", gpu->vram_max, gpu->vram_total);
+        printf(" (%dMiB / %dMiB)\n", gpu->vram_max, gpu->vram_total);
         printf("\n");
     }
 
-    if (get_amdgpu_power(device, &amdgpu_info) == 0) {
+    if (get_amdgpu_power(device, gpu) == 0) {
         char power_buff[32];
 
-        snprintf(power_buff, 32, "%d W", amdgpu_info.power);
+        snprintf(power_buff, 32, "%d W", gpu->power);
         pretty_print("GPU power", power_buff);
 
-        snprintf(power_buff, 32, "%d W", amdgpu_info.power_max);
+        snprintf(power_buff, 32, "%d W", gpu->power_max);
         pretty_print("Max GPU power", power_buff);
         printf("\n");
     }
 
-    if (get_amdgpu_freq(device, &amdgpu_info) == 0) {
+    if (get_amdgpu_freq(device, gpu) == 0) {
         char freq_buff[32];
 
-        snprintf(freq_buff, 32, "%d MHz", amdgpu_info.freq);
+        snprintf(freq_buff, 32, "%d MHz", gpu->freq);
         pretty_print("GPU freq", freq_buff);
 
-        snprintf(freq_buff, 32, "%d MHz", amdgpu_info.freq_max);
+        snprintf(freq_buff, 32, "%d MHz", gpu->freq_max);
         pretty_print("Max GPU freq", freq_buff);
         printf("\n");
     }
 
-    if (get_amdgpu_temp(device, &amdgpu_info) == 0) {
+    if (get_amdgpu_temp(device, gpu) == 0) {
         char temp_buff[32];
 
-        snprintf(temp_buff, 32, "%d°C", amdgpu_info.temp);
+        snprintf(temp_buff, 32, "%d°C", gpu->temp);
         pretty_print("GPU temp", temp_buff);
 
-        snprintf(temp_buff, 32, "%d°C", amdgpu_info.temp_max);
+        snprintf(temp_buff, 32, "%d°C", gpu->temp_max);
         pretty_print("Max GPU temp", temp_buff);
         printf("\n");
     }

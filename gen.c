@@ -2,17 +2,11 @@
 #include <stdio.h>
 #include <sys/utsname.h>
 
+#include "info.h"
+
 #include "util/util.h"
 
-struct gen_info {
-    int uptime_day;
-    int uptime_hour;
-    int uptime_min;
-};
-
-struct gen_info gen_info;
-
-int get_uptime(struct gen_info *gen_info) {
+int get_uptime(struct gen_info *gen) {
     struct timespec timespec_buff;
    
 
@@ -28,14 +22,15 @@ int get_uptime(struct gen_info *gen_info) {
     
     int uptime_sec = timespec_buff.tv_sec;
 
-    gen_info->uptime_day = uptime_sec / 60 / 60 / 24;
-    gen_info->uptime_hour = (uptime_sec / 60 / 60) - ( gen_info->uptime_day * 24);
-    gen_info->uptime_min = (uptime_sec / 60) - ( gen_info->uptime_hour * 60) - ( gen_info->uptime_day * 24);
+    gen->uptime_day = uptime_sec / 60 / 60 / 24;
+    gen->uptime_hour = uptime_sec / 60 / 60 % 24;
+    gen->uptime_min = uptime_sec / 60 % 60;
+    gen->uptime_sec = uptime_sec % 60;
 
     return 0;
 }
 
-void gen_init(void) {
+void gen_init(struct gen_info *gen) {
     struct utsname utsname_buff;
 
     print_title("gen");
@@ -46,9 +41,14 @@ void gen_init(void) {
         printf("\n");
     }
 
-    if (get_uptime(&gen_info) != -1) {
+    if (get_uptime(gen) != -1) {
         char uptime_buff[32];
-        snprintf(uptime_buff, 32, "%dd %dh %dm", gen_info.uptime_day, gen_info.uptime_hour, gen_info.uptime_min);
+        snprintf(uptime_buff, 32, "%dd %dh %dm %ds", 
+            gen->uptime_day, 
+            gen->uptime_hour, 
+            gen->uptime_min,
+            gen->uptime_sec
+        );
         pretty_print("Uptime", uptime_buff);
         printf("\n");
     }

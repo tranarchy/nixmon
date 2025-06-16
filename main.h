@@ -1,5 +1,5 @@
-void gen_init(void);
-void cpu_init(void);
-void mem_init(void);
-void gpu_init(void);
-void storage_init(void);
+void gen_init(struct gen_info *gen);
+void cpu_init(struct cpu_info *cpu);
+void mem_init(struct mem_info *mem);
+void storage_init(struct storage_info *storage);
+void gpu_init(struct gpu_info *gpu_info);

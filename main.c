@@ -8,13 +8,15 @@
 #include <signal.h>
 #include <termios.h>
 
+#include "info.h"
 #include "main.h"
+
 #include "util/util.h"
 #include "util/ansi.h"
 
 struct termios old, new;
 
-void INT_handler(int sig) {
+void int_handler(int sig) {
     signal(sig, SIG_IGN);
     tcsetattr(0, TCSANOW, &old);
     printf(CLEAR);
@@ -23,6 +25,12 @@ void INT_handler(int sig) {
 }
 
 int main(void) {
+    struct gen_info gen = { 0 };
+    struct cpu_info cpu = { 0 };
+    struct mem_info mem = { 0 };
+    struct storage_info storages[32];
+    struct gpu_info gpu = { 0 };
+
     tcgetattr(0, &old);
     new = old;
     new.c_lflag &= ~(ICANON | ECHO);
@@ -30,20 +38,20 @@ int main(void) {
 
     printf(HIDE_CURSOR);
 
-    signal(SIGINT, INT_handler);
+    signal(SIGINT, int_handler);
     
-    while (1) {
+    for (;;) {
         printf(CLEAR);
 
         draw_box(1);
 
-        gen_init();
-        cpu_init();
-        mem_init();
-        storage_init();
+        gen_init(&gen);
+        cpu_init(&cpu);
+        mem_init(&mem);
+        storage_init(storages);
 
         #if !(defined(__APPLE__))
-            gpu_init();
+            gpu_init(&gpu);
         #endif
     
         draw_box(0);

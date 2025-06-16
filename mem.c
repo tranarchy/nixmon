@@ -1,6 +1,8 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "info.h"
+
 #if defined(__OpenBSD__) || defined(__FreeBSD__) || defined(__NetBSD__)
     #include <unistd.h>
 
@@ -22,16 +24,7 @@
 
 #include "util/util.h"
 
-struct mem_info {
-    int total;
-
-    int used;
-    int used_max;
-};
-
-struct mem_info mem_info;
-
-int get_mem_usage(struct mem_info *mem_info) {
+int get_mem_usage(struct mem_info *mem) {
 
     #if defined(__linux__)
 
@@ -48,7 +41,7 @@ int get_mem_usage(struct mem_info *mem_info) {
 
         while (fgets(line, sizeof(line), fp)) {
             if (strstr(line, "MemTotal:") != NULL) {
-                if (sscanf(line, "MemTotal: %d kB", &mem_info->total) == 1) {
+                if (sscanf(line, "MemTotal: %d kB", &mem->total) == 1) {
                     continue;
                 }
             }
@@ -62,10 +55,10 @@ int get_mem_usage(struct mem_info *mem_info) {
 
         fclose(fp);
 
-        mem_info->used = mem_info->total - available;
+        mem->used = mem->total - available;
 
-        mem_info->total /= 1024;
-        mem_info->used /= 1024;
+        mem->total /= 1024;
+        mem->used /= 1024;
 
     #elif defined(__OpenBSD__) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__APPLE__)
         
@@ -119,37 +112,37 @@ int get_mem_usage(struct mem_info *mem_info) {
 
         #if defined(__OpenBSD__)
             long long active = vmtotal.t_avm * pagesize;
-            mem_info->used = get_mib(active);
+            mem->used = get_mib(active);
         #elif defined(__APPLE__)
             long long active = vm_stats.active_count * pagesize;
             long long wire = vm_stats.wire_count * pagesize;
             long long compression = vm_stats.compressor_page_count * pagesize;
-            mem_info->used = get_mib(active + wire + compression);
+            mem->used = get_mib(active + wire + compression);
         #else
             long long free = vmtotal.t_free * pagesize;
-            mem_info->used = get_mib(total - free);
+            mem->used = get_mib(total - free);
         #endif
 
-        mem_info->total = get_mib(total);
+        mem->total = get_mib(total);
 
     #endif
 
-    if (mem_info->used > mem_info->used_max) {
-        mem_info->used_max = mem_info->used;
+    if (mem->used > mem->used_max) {
+        mem->used_max = mem->used;
     }
 
     return 0;
 }
 
-void mem_init(void) {
+void mem_init(struct mem_info *mem) {
 
-    if (get_mem_usage(&mem_info) != -1) {
+    if (get_mem_usage(mem) != -1) {
         print_title("mem");
-        print_progress("RAM usage", mem_info.used, mem_info.total);
-        printf(" (%dMiB / %dMiB)\n",  mem_info.used, mem_info.total);
+        print_progress("RAM usage", mem->used, mem->total);
+        printf(" (%dMiB / %dMiB)\n",  mem->used, mem->total);
     
-        print_progress("Max RAM usage", mem_info.used_max, mem_info.total);
-        printf(" (%dMiB / %dMiB)\n",  mem_info.used_max, mem_info.total);
+        print_progress("Max RAM usage", mem->used_max, mem->total);
+        printf(" (%dMiB / %dMiB)\n",  mem->used_max, mem->total);
         printf("\n");
     }
 }
