@@ -4,9 +4,8 @@
 #include <libdrm/amdgpu.h>
 #include <libdrm/amdgpu_drm.h>
 
-#include "../info.h"
-
-#include "../util/util.h"
+#include "../include/util.h"
+#include "../include/info.h"
 
 int get_amdgpu_usage(amdgpu_device_handle device, struct gpu_info *gpu) {
     size_t len;

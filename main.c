@@ -8,11 +8,10 @@
 #include <signal.h>
 #include <termios.h>
 
-#include "info.h"
-#include "main.h"
-
-#include "util/util.h"
-#include "util/ansi.h"
+#include "include/util.h"
+#include "include/ansi.h"
+#include "include/info.h"
+#include "include/main.h"
 
 struct termios old, new;
 
@@ -28,7 +27,7 @@ int main(void) {
     struct gen_info gen = { 0 };
     struct cpu_info cpu = { 0 };
     struct mem_info mem = { 0 };
-    struct storage_info storages[32];
+    struct storage_info storages[32] = { 0 };
     struct gpu_info gpu = { 0 };
 
     tcgetattr(0, &old);
@@ -50,7 +49,7 @@ int main(void) {
         mem_init(&mem);
         storage_init(storages);
 
-        #if !(defined(__APPLE__))
+        #ifndef __APPLE__
             gpu_init(&gpu);
         #endif
     

@@ -1,34 +1,9 @@
-#include <time.h>
 #include <stdio.h>
 #include <sys/utsname.h>
 
-#include "info.h"
-
-#include "util/util.h"
-
-int get_uptime(struct gen_info *gen) {
-    struct timespec timespec_buff;
-   
-
-    #if defined(__linux__) || defined(__NetBSD__) || defined(__APPLE__)
-        int ret = clock_gettime(CLOCK_MONOTONIC, &timespec_buff);
-    #else
-        int ret = clock_gettime(CLOCK_UPTIME, &timespec_buff);
-    #endif
-
-    if (ret == -1) {
-        return ret;
-    }
-    
-    int uptime_sec = timespec_buff.tv_sec;
-
-    gen->uptime_day = uptime_sec / 60 / 60 / 24;
-    gen->uptime_hour = uptime_sec / 60 / 60 % 24;
-    gen->uptime_min = uptime_sec / 60 % 60;
-    gen->uptime_sec = uptime_sec % 60;
-
-    return 0;
-}
+#include "include/info.h"
+#include "include/util.h"
+#include "include/gen.h"
 
 void gen_init(struct gen_info *gen) {
     struct utsname utsname_buff;

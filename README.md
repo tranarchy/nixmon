@@ -34,7 +34,7 @@ make
 make install
 ```
 
-Use `make macos` instead of `make` if you are on macOS
+`make` defaults to Linux, use the appropriate make command for your system `make fbsd / obsd / nbsd / macos`
 
 ## FreeBSD
 
