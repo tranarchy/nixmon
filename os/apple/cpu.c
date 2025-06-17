@@ -57,12 +57,8 @@ int get_cpu_freq(struct cpu_info *cpu) {
 
         if (strcmp(name, "pmgr") == 0) {
             break;
-        }
-
-        IOObjectRelease(iter);
+        };
     }
-
-    CFRelease(matching);
 
     CFTypeRef pCoreRef = IORegistryEntryCreateCFProperty(entry, CFSTR("voltage-states5-sram"), kCFAllocatorDefault, 0);
 
@@ -70,7 +66,7 @@ int get_cpu_freq(struct cpu_info *cpu) {
 
     CFDataGetBytes(pCoreRef, CFRangeMake(length - 8, 4), (UInt8 *) &freq_raw);
 
-    cpu->freq = freq_raw / 1000 / 1000 / 1000;
+    cpu->freq = freq_raw / 1000.0 / 1000.0 / 1000.0;
 
     if (cpu->freq > cpu->freq_max) {
         cpu->freq_max = cpu->freq;
