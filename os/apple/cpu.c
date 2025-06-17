@@ -6,9 +6,6 @@
 
 #include <sys/sysctl.h>
 
-#include <IOKit/IOKitLib.h>
-#include <CoreFoundation/CoreFoundation.h>
-
 #include "../../include/info.h"
 #include "../../include/cpu.h"
 
@@ -42,46 +39,36 @@ int get_cpu_usage(struct cpu_info *cpu) {
 }
 
 int get_cpu_freq(struct cpu_info *cpu) {
-    unsigned int freq_raw;
-    uint32_t max = 0;
+    // this is probably not the right way but apple deprecated hw.cpufrequency...
+    int mib[2];
 
-    CFDictionaryRef matching = IOServiceMatching("AppleARMIODevice");
+    int tbfreq;
+    size_t len, slen;
+    struct clockinfo clockinfo;
 
-    io_iterator_t iter;
-    io_registry_entry_t entry;
-    IOServiceGetMatchingServices(kIOMainPortDefault, matching, &iter);
+    mib[0] = CTL_HW;
+    mib[1] = HW_TB_FREQ;
 
-    while ((entry = IOIteratorNext(iter))) {
-        io_name_t name;
+    len = sizeof(tbfreq);
 
-        IORegistryEntryGetName(entry, name);
+    int ret = sysctl(mib, 2, &tbfreq, &len, NULL, 0);
 
-        if (strcmp(name, "pmgr") == 0) {
-            break;
-        }
+    if (ret == -1) {
+        return ret;
     }
 
+    mib[0] = CTL_KERN;
+    mib[1] = KERN_CLOCKRATE;
 
-    IOObjectRelease(iter);
-    CFRelease(matching);
+    slen = sizeof(struct clockinfo);
 
-    CFTypeRef pCoreRef = IORegistryEntryCreateCFProperty(entry, CFSTR("voltage-states5-sram"), kCFAllocatorDefault, 0);
+    ret = sysctl(mib, 2, &clockinfo, &slen, NULL, 0);
 
-    size_t length = CFDataGetLength(pCoreRef);
-
-    for (size_t i = 0; i < length - 3; i += 4) {
-        uint32_t curr_freq = 0;
-
-        CFDataGetBytes(pCoreRef, CFRangeMake(i, sizeof(uint32_t)), (UInt8 *) &curr_freq);
-
-        if (curr_freq > max) {
-            max = curr_freq;
-        }
+    if (ret == -1) {
+        return ret;
     }
 
-    freq_raw = max;
-
-    cpu->freq = freq_raw / 1000 / 1000;
+    cpu->freq = ((double)tbfreq * (double)clockinfo.hz) / 1000 / 1000 / 1000;
 
     if (cpu->freq > cpu->freq_max) {
         cpu->freq_max = cpu->freq;
