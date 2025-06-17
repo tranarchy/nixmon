@@ -1,5 +1,5 @@
-#if !(defined(__linux__) || defined(__OpenBSD__) || defined(__FreeBSD__) || defined(__NetBSD__) || defined(__APPLE__))
-    #warning "Unsupported OS!"
+#if !(defined(__linux__) || defined(__OpenBSD__) || defined(__FreeBSD__) || defined(__NetBSD__) || (defined(__APPLE__) && defined(__aarch64__)))
+    #error "Unsupported OS!"
 #endif
 
 #include <stdio.h>
